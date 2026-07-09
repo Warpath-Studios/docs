@@ -1,0 +1,51 @@
+---
+title: "Setup Instructions"
+description: "- Ultimate Multiplayer Inventory - Foliage System"
+---
+
+## **1. Enable Required Plugins**
+
+Enable:
+
+- Ultimate Multiplayer Inventory
+- Foliage System
+
+Restart editor.
+
+---
+
+## **2. Create a Foliage Manager Data Asset**
+
+Create:  
+**FoliageManagerDataAsset**
+
+Configure each foliage entry:
+
+- Foliage Type ID
+- Mesh or FoliageType association
+- Interaction Type (Simple or Complex)
+- Optional Complex Actor class
+- Optional loot setup
+- Respawn delay
+
+---
+
+## **3. Ensure Player Has UMI Interaction Component**
+
+If you use the UMI default character, this is automatic.
+
+Otherwise add:  
+**UInteractionComponent**
+
+Make sure the player triggers interactions through input or continuous trace.
+
+---
+
+## **4. Assign Foliage Type IDs**
+
+In the Foliage Tool:
+
+- Select mesh
+- In "Instance Settings," assign the **Foliage Type ID** that matches your data asset entry
+
+This step wires the painted foliage to your plugin.

@@ -1,0 +1,36 @@
+---
+title: "Integration With UMI"
+description: "The plugin does not implement its own interaction logic."
+---
+
+## **Interaction System**
+
+The plugin does not implement its own interaction logic.  
+It hooks into UMI's:
+
+- Interaction Component
+- Interaction Interface
+- Trace & focus handling
+- Input triggering
+
+UMI provides the interaction hit → the foliage plugin performs the foliage logic.
+
+---
+
+## **Loot Integration**
+
+- Simple foliage rolls loot immediately
+- Complex actors roll loot on break/destroy
+
+If you use your own loot system, you can override the harvest logic in Blueprint.
+
+---
+
+## **Respawn Integration**
+
+The plugin uses the **UMI Respawn Manager** to schedule regrowth:
+
+- Time-based respawn
+- Seasonal or biome rules (project-defined)
+- Optional sapling/spawner actors
+- Actor-level destruction triggers new respawn entry

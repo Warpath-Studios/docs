@@ -1,0 +1,38 @@
+---
+title: "Using the Plugin"
+description: "1."
+---
+
+## **Creating Simple Foliage**
+
+1. Add an entry in the Foliage Manager
+2. Set Interaction Type = *Simple*
+3. Assign optional loot
+4. Paint foliage normally
+
+Players can now harvest it immediately.
+
+---
+
+## **Creating Complex Foliage**
+
+1. Create an Actor (e.g., BP\_Tree, BP\_OreNode)
+2. Add a Foliage Manager entry
+3. Set Interaction Type = *Complex*
+4. Assign your Actor class
+5. Paint foliage normally
+
+Interacting with it spawns your Actor.
+
+---
+
+## **Extending Behavior in Blueprint**
+
+Actors can override:
+
+- OnInteracted
+- OnHarvested
+- OnDestroyed
+- OnRespawned
+
+This gives full freedom for custom mechanics.

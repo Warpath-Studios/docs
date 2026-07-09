@@ -1,0 +1,68 @@
+---
+title: "How It Works"
+description: "When the player interacts with foliage:"
+---
+
+## **FoliageInstance Detection**
+
+When the player interacts with foliage:
+
+1. UMI triggers an interact event based on its trace
+2. The plugin checks whether the hit component is a `UFoliageInstancedStaticMeshComponent`
+3. The instance index is retrieved
+4. The system looks up that foliage type in the **Foliage Manager Data Asset**
+
+This avoids per-instance actors and keeps performance high.
+
+---
+
+## **Simple vs Complex Foliage**
+
+### **Simple Foliage**
+
+Examples:
+
+- Stones
+- Sticks
+- Herbs
+- Berries
+- Mushrooms
+
+Behavior:
+
+- Harvested instantly
+- Instance removed
+- Optional loot rolled immediately
+- Respawn Manager schedules regrowth
+
+### **Complex Foliage**
+
+Examples:
+
+- Trees
+- Large ore nodes
+- Bushes with multiple harvest stages
+
+Behavior:
+
+- Foliage instance is removed
+- A custom Actor class is spawned in its place
+- Actor handles health, break events, and loot
+- Respawn Manager handles regrowth logic
+
+---
+
+## **Actor Conversion Pipeline**
+
+For Complex foliage types:
+
+1. Instance is removed
+2. Assigned Actor class is spawned
+3. Actor receives optional metadata:
+
+   - Instance transform
+   - Foliage type ID
+   - Loot definition
+   - Health/durability values
+
+The Actor now behaves as any other interactable gameplay object.
