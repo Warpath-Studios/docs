@@ -11,6 +11,35 @@
   "navigation": {
     "tabs": [
       {
+        "tab": "Attribute System",
+        "pages": [
+          "AttributeSystem/index",
+          "AttributeSystem/installation-and-setup",
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "AttributeSystem/core-concepts/index",
+              "AttributeSystem/core-concepts/attribute-definition",
+              "AttributeSystem/core-concepts/attribute-profiles",
+              "AttributeSystem/core-concepts/attribute-manager-component",
+              "AttributeSystem/core-concepts/effect-system",
+              "AttributeSystem/core-concepts/leveling-and-progression",
+              "AttributeSystem/core-concepts/attribute-level-link-definitions",
+              "AttributeSystem/core-concepts/subsystems"
+            ]
+          },
+          "AttributeSystem/creating-an-attribute-profile",
+          "AttributeSystem/working-with-attributes-in-blueprint",
+          "AttributeSystem/working-with-attributes-in-cplusplus",
+          "AttributeSystem/gas-optional",
+          "AttributeSystem/attribute-level-link-definitions",
+          "AttributeSystem/advanced-topics",
+          "AttributeSystem/example-project",
+          "AttributeSystem/troubleshooting-and-faq",
+          "AttributeSystem/changelog"
+        ]
+      },
+      {
         "tab": "Inventory System",
         "pages": [
           "InventorySystem/index",
@@ -177,35 +206,6 @@
         ]
       },
       {
-        "tab": "Attribute System",
-        "pages": [
-          "AttributeSystem/index",
-          "AttributeSystem/installation-and-setup",
-          {
-            "group": "Core Concepts",
-            "pages": [
-              "AttributeSystem/core-concepts/index",
-              "AttributeSystem/core-concepts/attribute-definition",
-              "AttributeSystem/core-concepts/attribute-profiles",
-              "AttributeSystem/core-concepts/attribute-manager-component",
-              "AttributeSystem/core-concepts/effect-system",
-              "AttributeSystem/core-concepts/leveling-and-progression",
-              "AttributeSystem/core-concepts/attribute-level-link-definitions",
-              "AttributeSystem/core-concepts/subsystems"
-            ]
-          },
-          "AttributeSystem/creating-an-attribute-profile",
-          "AttributeSystem/working-with-attributes-in-blueprint",
-          "AttributeSystem/working-with-attributes-in-cplusplus",
-          "AttributeSystem/gas-optional",
-          "AttributeSystem/attribute-level-link-definitions",
-          "AttributeSystem/advanced-topics",
-          "AttributeSystem/example-project",
-          "AttributeSystem/troubleshooting-and-faq",
-          "AttributeSystem/changelog"
-        ]
-      },
-      {
         "tab": "Skill System",
         "pages": [
           "SkillSystem/index",
@@ -230,11 +230,11 @@
       },
       {
         "tab": "Foliage System",
-        "groups": [
+        "pages": [
+          "FoliageSystem/index",
           {
             "group": "Foliage System",
             "pages": [
-              "FoliageSystem/index",
               "FoliageSystem/how-it-works",
               "FoliageSystem/integration-with-umi",
               "FoliageSystem/setup-instructions",
