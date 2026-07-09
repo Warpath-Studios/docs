@@ -1,0 +1,105 @@
+---
+title: "Persistence"
+description: "Merchant state automatically persists via interface."
+---
+
+### **Save System Integration**
+
+Merchant state automatically persists via `ISaveable` interface.
+
+**Saved Data**:
+
+- Merchant GUID
+- Current stock levels
+- Transaction log
+- Processed nonces (for idempotency)
+
+**Save Trigger**:
+
+- Every transaction
+- Restock operations
+- Manual via `USaveSubsystem::FlushSaves()`
+
+### **Save Record Structure**
+
+```
+struct FMerchantSaveRecord
+{
+    int32 Version = 1;                      // Save format version
+    FGuid MerchantGuid;                     // Unique ID
+    TArray<FStockItem> StockItems;          // Stock state
+    TArray<FMerchantTransaction> TransactionLog;
+    TArray<FGuid> ProcessedNonces;          // Recent nonces
+};
+```
+
+### **Load Behavior**
+
+On server restart:
+
+- Stock levels restore to saved state
+- Transaction history preserved
+- Nonce cache restored (prevents replay attacks)
+
+---
+
+## **Error Handling**
+
+### **Error Codes**
+
+| **Code** | **Trigger** | **Resolution** |
+| --- | --- | --- |
+| `ERR_VENDOR_NOT_FOUND` | Invalid merchant reference | Check merchant exists |
+| `ERR_VENDOR_CLOSED` | Merchant unavailable | Future: time-of-day restrictions |
+| `ERR_NO_STOCK` | Stock depleted | Wait for restock or buy elsewhere |
+| `ERR_QTY_EXCEEDS_STOCK` | Requested > available | Reduce quantity |
+| `ERR_INSUFFICIENT_FUNDS` | Not enough currency | Earn more currency |
+| `ERR_INVENTORY_FULL` | No space in inventory | Free up inventory space |
+| `ERR_NOT_BUYING` | Merchant doesn't buy | Find different merchant |
+| `ERR_NOT_IN_BUYLIST` | Item not in whitelist | Sell different item |
+| `ERR_INVALID_QTY` | Zero or negative quantity | Use positive quantity |
+| `ERR_STALE_QUOTE` | Price changed since quote | Get new quote |
+| `ERR_DUPLICATE_NONCE` | Transaction already processed | Ignore (already completed) |
+| `ERR_OUT_OF_RANGE` | Player too far from merchant | Move closer |
+| `ERR_INVALID_ITEM` | Null item reference | Fix item reference |
+| `ERR_INVALID_PLAYER` | Null player reference | Fix player reference |
+
+### **Error Handling Pattern**
+
+```
+FPurchaseQuote Quote = Merchant->QuotePurchase(Player, Item, Qty);
+
+if (!Quote.bSuccess)
+{
+    switch (Quote.ErrorCode)
+    {
+        case EMerchantErrorCode::ERR_NO_STOCK:
+            DisplayToPlayer("Out of stock! Try again later.");
+            break;
+
+        case EMerchantErrorCode::ERR_INSUFFICIENT_FUNDS:
+            DisplayToPlayer(FString::Printf(
+                "Need %d gold (you have %d)",
+                Quote.Total,
+                PlayerGold
+            ));
+            break;
+
+        case EMerchantErrorCode::ERR_INVENTORY_FULL:
+            DisplayToPlayer("Inventory full! Free up space.");
+            break;
+
+        case EMerchantErrorCode::ERR_OUT_OF_RANGE:
+            DisplayToPlayer("Too far from merchant!");
+            break;
+
+        default:
+            DisplayToPlayer("Cannot complete transaction.");
+            break;
+    }
+    return;
+}
+
+// Success - display quote to player
+DisplayQuote(Quote);
+```

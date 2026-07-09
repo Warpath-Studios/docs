@@ -1,0 +1,44 @@
+---
+title: "Architecture"
+description: "UMerchantComponent"
+---
+
+### **Components**
+
+**UMerchantComponent**
+
+Core merchant logic component attached to merchant actors.
+
+- **Location**: `Source/UMI/Public/Merchant/Components/MerchantComponent.h`
+- **Responsibilities**:
+
+  - Transaction processing (buy/sell)
+  - Stock management
+  - Price calculation
+  - Validation and error handling
+  - Transaction logging
+  - Persistence
+
+**UMerchantSubsystem**
+
+World subsystem for global merchant management.
+
+- **Location**: `Source/UMI/Public/Merchant/Subsystems/MerchantSubsystem.h`
+- **Responsibilities**:
+
+  - Merchant registration/lookup
+  - Global restock operations
+  - Merchant querying
+
+### **Data Structures**
+
+| **Structure** | **Purpose** |
+| --- | --- |
+| `FMerchantConfig` | Vendor behavior configuration |
+| `FStockItem` | Individual stock entry with pricing |
+| `FPurchaseQuote` | Purchase price quote with validation |
+| `FSellQuote` | Sell price quote with validation |
+| `FRestockResult` | Restock operation result |
+| `FMerchantTransaction` | Transaction log entry |
+| `FMerchantSnapshot` | Complete merchant state for UI |
+| `FMerchantSaveRecord` | Persistence data |

@@ -1,0 +1,82 @@
+---
+title: "Transaction Flow"
+description: "Transaction Flow reference for the Inventory System plugin."
+---
+
+### **Purchase Flow**
+
+```
+┌─────────┐                  ┌──────────┐
+│ Client  │                  │  Server  │
+└────┬────┘                  └────┬─────┘
+     │                            │
+     │ QuotePurchase(Item, Qty)   │
+     │──────────────────────────> │
+     │                            │ Validate:
+     │                            │ - Proximity
+     │                            │ - Stock
+     │                            │ - Funds
+     │                            │ - Inventory space
+     │                            │
+     │  FPurchaseQuote (+ nonce)  │
+     │ <────────────────────────── │
+     │                            │
+     │ [User confirms in UI]      │
+     │                            │
+     │ Server_ConfirmPurchase     │
+     │   (Item, Qty, Price, Nonce)│
+     │──────────────────────────> │
+     │                            │ Re-validate quote
+     │                            │ Check nonce not duplicate
+     │                            │ Check price not stale
+     │                            │
+     │                            │ ATOMIC SETTLEMENT:
+     │                            │ ├─ Deduct currency
+     │                            │ ├─ Add items
+     │                            │ ├─ Reduce stock
+     │                            │ ├─ Log transaction
+     │                            │ └─ Mark nonce processed
+     │                            │
+     │   [Success/Error]          │
+     │ <────────────────────────── │
+     │                            │
+     │ [Inventory/stock replicated]│
+     │ <════════════════════════── │
+     │                            │
+```
+
+### **Sell Flow**
+
+```
+┌─────────┐                  ┌──────────┐
+│ Client  │                  │  Server  │
+└────┬────┘                  └────┬─────┘
+     │                            │
+     │ QuoteSell(Item, Qty)       │
+     │──────────────────────────> │
+     │                            │ Validate:
+     │                            │ - Proximity
+     │                            │ - Merchant buys item
+     │                            │ - Player owns item
+     │                            │
+     │  FSellQuote (+ nonce)      │
+     │ <────────────────────────── │
+     │                            │
+     │ [User confirms in UI]      │
+     │                            │
+     │ Server_ConfirmSell         │
+     │   (Item, Qty, Price, Nonce)│
+     │──────────────────────────> │
+     │                            │ Re-validate quote
+     │                            │
+     │                            │ ATOMIC SETTLEMENT:
+     │                            │ ├─ Remove items
+     │                            │ ├─ Add currency
+     │                            │ ├─ Replenishment logic
+     │                            │ ├─ Log transaction
+     │                            │ └─ Mark nonce processed
+     │                            │
+     │   [Success/Error]          │
+     │ <────────────────────────── │
+     │                            │
+```

@@ -1,0 +1,29 @@
+---
+title: "Adding to Characters"
+description: "1."
+---
+
+### **Blueprint**
+
+1. Open your Character Blueprint
+2. Add Component → **Inventory Component**
+3. Configure in Details panel:
+
+   ```
+   Max Slots: 30
+   Max Weight: 100.0
+   Inventory Type: Standard
+   ```
+
+### **C++**
+
+```
+// In your Character.h
+UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+UInventoryComponent* InventoryComponent;
+
+// In your Character.cpp constructor
+InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+InventoryComponent->MaxSlots = 30;
+InventoryComponent->MaxWeight = 100.0f;
+```

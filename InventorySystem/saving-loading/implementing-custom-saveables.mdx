@@ -1,0 +1,300 @@
+---
+title: "Implementing Custom Saveables"
+description: "Below is a Blueprint-oriented version of your Custom Container + Saveable example."
+---
+
+Below is a **Blueprint-oriented version** of your Custom Container + Saveable example. It’s written as something you can drop straight into the docs as an *integration pattern*, not a promise of built-in functionality.
+
+---
+
+## Blueprint Example: Custom Container (With Save Support)
+
+> **Disclaimer:**  
+> This example is **not part of UMI out of the box**.  
+> It shows how you *could* build a custom world container in Blueprint that:
+>
+> - Stores `FItemInstance` entries
+> - Implements a `Saveable` interface
+> - Registers itself with your own `SaveSubsystem`  
+>   You’ll need to adapt names and structs to match your project’s save system.
+
+---
+
+### 1. Create a “Saveable” Blueprint Interface
+
+Create a Blueprint Interface, e.g. `BPI_Saveable`, with these functions:
+
+1. `GetSaveGuid`
+
+   - **Return Type:** `Guid`
+2. `GetSaveBucket`
+
+   - **Return Type:** `Name`
+   - Example: `"World_Containers"`
+3. `BuildSaveRecord`
+
+   - **Return Type:** `FSaveRecord` (your project’s save record struct)
+4. `ApplySaveRecord`
+
+   - **Input:** `FSaveRecord` (Record)
+
+> This mirrors the C++ `ISaveable` interface, but in Blueprint form.
+
+---
+
+### 2. Create a Custom Container Blueprint
+
+Create a new **Actor Blueprint**, e.g. `BP_MyCustomContainer`.
+
+**Add Components/Variables:**
+
+- (Optional) Static Mesh for the container (chest, barrel, etc.)
+- Variable: `ContainerGuid`
+
+  - Type: `Guid`
+  - Instance Editable: ✔ or not, your call
+  - **SaveGame:** ✔ (if you’re using UE’s SaveGame flags)
+- Variable: `StoredItems`
+
+  - Type: `Array` of `FItemInstance`
+  - **SaveGame:** ✔
+
+**Implement Interfaces → Add** `BPI_Saveable` to this Blueprint.
+
+---
+
+### 3. BeginPlay: Generate GUID and Register with SaveSubsystem
+
+In `Event BeginPlay`:
+
+```
+Event BeginPlay
+ ├─ Call Parent: BeginPlay
+ ├─ Branch (Condition: ContainerGuid Is Valid?)
+ │      ├─ False:
+ │      │     └─ Set ContainerGuid = New Guid (node: "New GUID")
+ │      └─ True:
+ │            (Do nothing)
+ └─ Get Game Instance / Get World → Get SaveSubsystem
+       └─ Call "Register Saveable" (self)
+```
+
+This matches your C++:
+
+- If `ContainerGuid` is invalid → create a new GUID
+- Register this container with your save subsystem so it participates in saving/loading.
+
+> In your docs you can just say:  
+> “On BeginPlay, we ensure the container has a GUID and register it with the save system.”
+
+---
+
+### 4. Implement `GetSaveGuid` (BPI\_Saveable)
+
+In the `BPI_Saveable` function `GetSaveGuid`:
+
+```
+GetSaveGuid (Interface Implementation)
+ └─ Return ContainerGuid
+```
+
+Same as:
+
+```
+virtual FGuid GetSaveGuid() const override { return ContainerGuid; }
+```
+
+---
+
+### 5. Implement `GetSaveBucket`
+
+In `GetSaveBucket`:
+
+```
+GetSaveBucket
+ └─ Return Name literal "World_Containers"
+```
+
+This groups all container records under a common bucket.
+
+C++ equivalent:
+
+```
+virtual FName GetSaveBucket() const override { return "World_Containers"; }
+```
+
+---
+
+### 6. Implement `BuildSaveRecord`
+
+This part depends on how your `FSaveRecord` struct is exposed to Blueprint. Conceptually:
+
+1. **Create a local** `FSaveRecord` **variable**, e.g. `Record`.
+2. **Set its Type** (or similar field) to something like `"MyCustomContainer"`.
+3. **Serialize** `StoredItems` **into the Record**, using whatever approach your save system uses.
+
+Pseudo-graph:
+
+```
+BuildSaveRecord
+ ├─ Make FSaveRecord → set Type = "MyCustomContainer"
+ ├─ (Custom Step) Convert StoredItems → Serialized Data
+ │      Example options:
+ │      - Use a Blueprint Function Library node:
+ │            "ItemArrayToBytes(StoredItems) → Bytes"
+ │      - Or directly assign an array field if your FSaveRecord has one
+ └─ Return Record
+```
+
+In C++ you did this with `FMemoryWriter` and `FItemRecord`:
+
+```
+int32 ItemCount = StoredItems.Num();
+Writer << ItemCount;
+for (FItemInstance& Item : StoredItems)
+{
+    FItemRecord ItemRecord = Item.ToRecord();
+    Writer << ItemRecord;
+}
+```
+
+In Blueprint, you’d typically replace that binary work with:
+
+- A helper function that converts `StoredItems` to something storable in `FSaveRecord`
+- Or a more direct approach like an `Array<FItemRecord>` field on `FSaveRecord`.
+
+For docs, you can phrase this as:
+
+> “In BuildSaveRecord, serialize `StoredItems` into the save record using your project’s preferred method (Blueprint Function Library, struct fields, or a custom serializer).”
+
+---
+
+### 7. Implement `ApplySaveRecord`
+
+This is the inverse: clear current items, then rebuild from the save data.
+
+Pseudo-graph:
+
+```
+ApplySaveRecord (Input: Record)
+ ├─ Branch (Record.Type == "MyCustomContainer" ?)
+ │     ├─ False → Return
+ │     └─ True:
+ │           ├─ Clear StoredItems
+ │           ├─ (Custom Step) Deserialize items:
+ │           │       Serialized data in Record → Array<FItemInstance>
+ │           └─ Set StoredItems = [Deserialized Items]
+```
+
+This is the Blueprint-equivalent of:
+
+```
+StoredItems.Empty();
+for (int32 i = 0; i < ItemCount; i++)
+{
+    FItemRecord ItemRecord;
+    Reader << ItemRecord;
+
+    FItemInstance Item = FItemInstance::FromRecord(ItemRecord);
+    StoredItems.Add(Item);
+}
+```
+
+Again, in Blueprint you’ll lean on:
+
+- A helper node like `BytesToItemArray(Bytes) → StoredItems`, or
+- Direct struct/array fields on `FSaveRecord`.
+
+---
+
+### 8. Hooking It Up to UMI
+
+Once you’ve got `StoredItems` working with your save/load:
+
+- Use UMI’s container/interaction logic to:
+
+  - Open the container UI and show `StoredItems`
+  - Allow transferring items between player inventory and `StoredItems`
+  - Optionally use UMI helpers for adding/removing items in this container
+
+You might, for example, treat `StoredItems` exactly like a secondary inventory array and reuse your existing UI logic.
+
+### **C++**:
+
+```
+UCLASS()
+class UMyCustomContainer : public UActorComponent, public ISaveable
+{
+    GENERATED_BODY()
+
+public:
+    // ISaveable interface
+    virtual FGuid GetSaveGuid() const override { return ContainerGuid; }
+    virtual FName GetSaveBucket() const override { return "World_Containers"; }
+    virtual FSaveRecord BuildSaveRecord() override;
+    virtual void ApplySaveRecord(const FSaveRecord& Record) override;
+
+protected:
+    UPROPERTY(SaveGame)
+    FGuid ContainerGuid;
+
+    UPROPERTY()
+    TArray<FItemInstance> StoredItems;
+
+    virtual void BeginPlay() override
+    {
+        Super::BeginPlay();
+
+        // Generate GUID if needed
+        if (!ContainerGuid.IsValid())
+        {
+            ContainerGuid = FGuid::NewGuid();
+        }
+
+        // Register with save system
+        USaveSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<USaveSubsystem>();
+        SaveSubsystem->RegisterSaveable(this);
+    }
+};
+
+FSaveRecord UMyCustomContainer::BuildSaveRecord()
+{
+    FSaveRecord Record;
+    Record.Type = "MyCustomContainer";
+
+    FMemoryWriter Writer(Record.Bytes);
+
+    // Serialize items
+    int32 ItemCount = StoredItems.Num();
+    Writer << ItemCount;
+
+    for (FItemInstance& Item : StoredItems)
+    {
+        FItemRecord ItemRecord = Item.ToRecord();
+        Writer << ItemRecord;
+    }
+
+    return Record;
+}
+
+void UMyCustomContainer::ApplySaveRecord(const FSaveRecord& Record)
+{
+    if (Record.Type != "MyCustomContainer") return;
+
+    FMemoryReader Reader(Record.Bytes);
+
+    // Deserialize items
+    int32 ItemCount;
+    Reader << ItemCount;
+
+    StoredItems.Empty();
+    for (int32 i = 0; i < ItemCount; i++)
+    {
+        FItemRecord ItemRecord;
+        Reader << ItemRecord;
+
+        FItemInstance Item = FItemInstance::FromRecord(ItemRecord);
+        StoredItems.Add(Item);
+    }
+}
+```

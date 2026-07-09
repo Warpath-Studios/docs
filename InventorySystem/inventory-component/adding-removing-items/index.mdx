@@ -1,0 +1,196 @@
+---
+title: "Adding & Removing Items"
+description: "The UMI Inventory System provides a flexible and modular way to add, remove, use, transfer, and drop items."
+---
+
+The UMI Inventory System provides a flexible and modular way to **add**, **remove**, **use**, **transfer**, and **drop** items. These actions form the core workflows for any inventory-driven game, including survival, RPG, crafting, and MMO-style mechanics.
+
+This section explains the high-level logic behind how the system handles item flow and links to dedicated pages with detailed Blueprint + C++ examples.
+
+---
+
+## **How UMI Handles Items Internally**
+
+Every item in UMI exists as an **Item Instance** (`FItemInstance`) which contains:
+
+- Item ID
+- Reference to its `UItemDataAsset`
+- Stack quantity
+- Quality / durability / custom fields
+- Crafter name (optional)
+- Any additional metadata
+
+When adding or removing items, UMI always modifies **item instances**, not data assets.
+
+---
+
+## **Overview of Item Flow**
+
+### **1. Adding Items**
+
+You can add items to an inventory in several ways:
+
+- **By Data Asset** (e.g., adding "5 Health Potions")
+- **By Item Instance** (customized items with durability, crafter name, etc.)
+- **With Overflow Handling** (e.g., generate world drops when inventory is full)
+
+UMI automatically:
+
+- Finds valid slots
+- Merges stacks when possible
+- Respects slot/container restrictions
+- Respects weight / encumbrance limits
+- Returns overflow if items do not fit
+
+🔗 *See:* **Adding Items**
+
+---
+
+### **2. Removing Items**
+
+Items can be removed:
+
+- By Item ID
+- By Data Asset
+- By slot index
+- By taking an item instance directly
+
+UMI calculates exact quantities and prevents partial removes unless requested.
+
+🔗 *See:* **Removing Items**
+
+---
+
+### **3. Using Items**
+
+The inventory can execute an item’s **use behavior**, such as:
+
+- Consuming food / potions
+- Triggering abilities
+- Reducing stack count
+- Destroying or replacing the instance
+
+Usage can be invoked via slot index, UI interaction, or hotbar input.
+
+🔗 *See:* **Using Items**
+
+---
+
+### **4. Weight & Encumbrance**
+
+UMI supports weight-based carry limits. When enabled:
+
+- Items contribute to total weight
+- Adding items may fail if too heavy
+- Designers may impose movement penalties
+
+Weight is fully optional and can be disabled (MaxWeight = 0).
+
+🔗 *See:* **Weight / Encumbrance**
+
+---
+
+### **5. Container & Slot Restrictions**
+
+UMI allows fine-grained control over what items can be placed in:
+
+- Entire inventories (containers)
+- Individual slots (e.g., weapon-only slots)
+
+Restrictions can use:
+
+- Gameplay tags
+- Whitelists / blacklists
+- Custom Blueprint logic
+
+🔗 *See:* **Container Restrictions**
+
+---
+
+### **6. Sorting & Compacting**
+
+Inventories can be automatically or manually sorted by:
+
+- Name
+- Rarity
+- Quantity
+- Category
+- Value
+- Custom sorting logic
+
+UMI also supports compacting (removing empty slot gaps).
+
+🔗 *See:* **Sorting System**
+
+---
+
+### **7. Transferring Items Between Inventories**
+
+Items can be transferred:
+
+- Between player inventories
+- Between containers
+- Into equipment slots
+- From hotbar → inventory or vice-versa
+
+Transfers support quantity control and restriction validation.
+
+🔗 *See:* **Transferring Items**
+
+---
+
+### **8. Splitting Stacks**
+
+Stacks can be split either:
+
+- Automatically (half split)
+- With custom logic in Blueprint or UI
+- During drag-drop operations
+
+🔗 *See:* **Splitting Stacks**
+
+---
+
+### **9. Dropping Items into the World**
+
+Items can be spawned as physical world objects using:
+
+- Drop by slot
+- Drop by instance
+- Drop at target location
+- Overflow drop during AddItem operations
+
+World items integrate with the Interaction System.
+
+🔗 *See:* **Dropping Items**
+
+---
+
+## **When to Use Each Function**
+
+| Action | When to Use It |
+| --- | --- |
+| **AddItem** | Standard item grants, pickups, crafting outputs |
+| **AddItemInstance** | Items with durability, quality, custom metadata |
+| **TryAddItem** | Adding items when space/weight restrictions may block placement |
+| **RemoveItem / TakeItem** | Consuming items, moving items to UI widgets or equipment |
+| **UseItem** | Potions, food, consumables, abilities |
+| **TransferItem** | Looting containers, trading, stash systems |
+| **SplitStack** | Drag/drop UIs, inventory management |
+| **DropItem / SpawnWorldItem** | Throwing items, world pickups, death drop behaviors |
+
+---
+
+## **System Responsibilities Summary**
+
+UMI handles:
+
+- Slot searching and stack merging
+- Quantity validation
+- Weight and capacity checks
+- Restriction enforcement
+- Overflow handling
+- Instance creation and replication
+- UI event broadcasting
+
+You only need to call the appropriate function — UMI takes care of the internal logic.

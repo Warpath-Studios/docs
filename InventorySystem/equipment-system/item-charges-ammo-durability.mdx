@@ -1,0 +1,28 @@
+---
+title: "Item Charges (Ammo / Durability)"
+description: "Use to update the charge count on an already-equipped item without triggering the full equip/unequip cycle."
+---
+
+Use `SetEquippedItemCharges` to update the charge count on an already-equipped item without triggering the full equip/unequip cycle. This is the intended path for ranged weapon ammo and similar consumable stats.
+
+**C++**:
+
+```
+// Decrement arrow count by 1 on each shot (e.g., in GA_RangedAttack)
+FItemInstance Quiver = EquipmentComponent->GetEquippedItem(QuiverSlotIndex);
+int32 NewCount = Quiver.CurrentCharges - 1;
+EquipmentComponent->SetEquippedItemCharges(QuiverSlotIndex, NewCount);
+// Fires OnEquippedItemChargesChanged → HUD updates automatically
+```
+
+**Blueprint:**
+
+```
+[EquipmentComponent] → SetEquippedItemCharges
+   Slot Index:   [QuiverSlotIndex]
+   New Charges:  [CurrentCharges - 1]
+```
+
+![b10ec2a27b592e3b42e86bff0d988da5.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2F20367a06-5c24-4e26-bad6-7bdd508665c7%2Fimages%2Fb10ec2a27b592e3b42e86bff0d988da5-3e924c6f-989a-4352-85b2-bd252c375c96.png "b10ec2a27b592e3b42e86bff0d988da5.png")
+
+Charges are clamped to `>= 0` internally. `OnEquippedItemChargesChanged` always fires even on no-op updates, so guard against that in performance-sensitive HUD code if needed.

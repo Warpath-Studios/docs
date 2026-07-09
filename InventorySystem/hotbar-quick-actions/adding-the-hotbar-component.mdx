@@ -1,0 +1,44 @@
+---
+title: "Adding the Hotbar Component"
+description: "1."
+---
+
+### Blueprint Setup
+
+1. Open your **Character Blueprint**
+2. **Add Component → Hotbar Component**
+3. Configure properties, for example:
+
+   - `Max Slots`: `9`
+   - `Auto Refill Enabled`: `true`
+
+Optionally link to the main inventory in `BeginPlay`:
+
+```
+Event BeginPlay
+   ↓
+Get HotbarComponent
+   ↓
+Set Player Inventory
+   Inventory: [Main InventoryComponent]
+```
+
+### C++ Setup
+
+```
+// In Character.h
+UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+UHotbarComponent* HotbarComponent;
+
+// In Character.cpp constructor
+HotbarComponent = CreateDefaultSubobject<UHotbarComponent>(TEXT("HotbarComponent"));
+HotbarComponent->MaxSlots = 9;
+HotbarComponent->bAutoRefillEnabled = true;
+
+// In BeginPlay
+void AMyCharacter::BeginPlay()
+{
+    Super::BeginPlay();
+    HotbarComponent->SetPlayerInventory(InventoryComponent);
+}
+```

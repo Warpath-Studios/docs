@@ -1,0 +1,137 @@
+---
+title: "Loot Tables"
+description: "1."
+---
+
+### Creating a Loot Table
+
+1. **Content Browser → Right-click → Miscellaneous → Data Asset**
+2. Choose `LootTable` as the class
+3. Name it, for example:
+
+   - `LT_CommonChest`
+   - `LT_ZombieDrops`
+   - `LT_TreeLoot`
+   - `LT_RockLoot`
+
+---
+
+### Loot Table Structure
+
+A `LootTable` asset typically contains:
+
+- **Loot Entries** (array)
+
+  - Each entry represents a possible drop (item, weight, quantity, rarity override)
+- **Max Items To Spawn**
+
+  - Limits how many different entries are chosen per roll
+- **Use Priority For Overflow**
+
+  - Controls how extra items are handled when there’s no space
+- **Global Rarity Weights**
+
+  - Optional global tuning for rarity distribution
+- **Stat Scaling Rules**
+
+  - Optional rules for scaling stats based on level / difficulty
+
+---
+
+### Loot Entries (`FLootEntry`)
+
+Each entry in the table defines a potential drop:
+
+```
+struct FLootEntry
+{
+    UItemDataAsset* ItemData;      // Item to drop
+    float DropWeight;              // Relative probability
+    int32 MinQuantity;             // Minimum stack size
+    int32 MaxQuantity;             // Maximum stack size
+    FGameplayTag RarityOverride;   // Optional rarity tag override
+    int32 Quantity;                // Fixed quantity (if not using Min/Max)
+};
+```
+
+**Key points:**
+
+- `ItemData`  
+  The item definition (`UItemDataAsset`) to spawn.
+- `DropWeight`  
+  Relative weight used when randomly choosing entries. Higher = more likely.
+- `MinQuantity` **/** `MaxQuantity`  
+  If set, a random integer in this range will be used for the stack size.
+- `Quantity`  
+  Fixed quantity if you don’t want a range. (Typically you use **either** `Quantity` or `Min/Max`, not both.)
+- `RarityOverride`  
+  Optional gameplay tag to override the item’s default rarity (e.g., force an uncommon roll of a common item).
+
+---
+
+### Example: Common Chest Loot Table
+
+**Loot Table:** `LT_CommonChest`
+
+**Loot Entries:**
+
+- **[0] Health Potions**
+
+  - Item Data: `DA_HealthPotion`
+  - Drop Weight: `50.0`
+  - Min Quantity: `1`
+  - Max Quantity: `3`
+  - Rarity Override: *None*
+- **[1] Wood Logs**
+
+  - Item Data: `DA_WoodLog`
+  - Drop Weight: `30.0`
+  - Min Quantity: `5`
+  - Max Quantity: `15`
+  - Rarity Override: *None*
+- **[2] Iron Ore**
+
+  - Item Data: `DA_IronOre`
+  - Drop Weight: `20.0`
+  - Min Quantity: `1`
+  - Max Quantity: `5`
+  - Rarity Override: *None*
+- **[3] Iron Sword**
+
+  - Item Data: `DA_IronSword`
+  - Drop Weight: `10.0`
+  - Quantity: `1`
+  - Rarity Override: `Item.Rarity.Uncommon`
+- **[4] Gold Coins**
+
+  - Item Data: `DA_GoldCoin`
+  - Drop Weight: `40.0`
+  - Min Quantity: `10`
+  - Max Quantity: `50`
+  - Rarity Override: *None*
+
+**Max Items To Spawn:** `3`  
+→ Even though there are 5 possible entries, at most 3 distinct entries will be chosen for each loot roll.
+
+---
+
+### Drop Weight Explained
+
+Drop weights behave as **relative odds**, not absolute percentages.
+
+In the example above:
+
+- Total weight = `50 + 30 + 20 + 10 + 40 = 150`
+
+Approximate chances per roll (per “pick”):
+
+- `Health Potion`: 50 / 150 ≈ **33.3%**
+- `Wood Log`: 30 / 150 ≈ **20.0%**
+- `Iron Ore`: 20 / 150 ≈ **13.3%**
+- `Iron Sword`: 10 / 150 ≈ **6.7%**
+- `Gold Coin`: 40 / 150 ≈ **26.7%**
+
+> **Rule of thumb:**
+>
+> - Double the weight → roughly double the chance
+> - Weight = 0 → item is effectively disabled

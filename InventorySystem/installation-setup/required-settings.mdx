@@ -1,0 +1,209 @@
+---
+title: "Required Settings"
+description: "UMI depends on these plugins (they should auto-enable):"
+---
+
+### 
+
+## **Required Project Settings**
+
+### **1. Enable Required Plugins**
+
+UMI depends on these plugins (they should auto-enable):
+
+- **Gameplay Abilities System** (built-in)
+- **Enhanced Input** (built-in)
+- **Common UI** (built-in)
+
+Verify in **Edit > Plugins**:
+
+- Search for each plugin
+- Ensure they're all enabled
+- Restart if necessary
+
+### **2. Project Settings Configuration**
+
+**Input Settings (Legacy Input)**
+
+If using legacy input (not Enhanced Input), add action mappings:
+
+1. **Edit > Project Settings > Input**
+2. Add these Action Mappings:
+
+   - `Interact` → E key
+   - `OpenInventory` → Tab or I key
+   - `PrimaryAction` → Left Mouse Button
+   - `Hotbar1` through `Hotbar9` → Number keys 1-9
+
+**Enhanced Input (Recommended)**
+
+1. Create an **Input Mapping Context** for inventory actions
+2. Define **Input Actions** for:
+
+   - Interact
+   - Open Inventory
+   - Primary Action
+   - Hotbar Slots (1-9)
+3. Add the mapping context to your player controller
+
+**Collision Settings**
+
+Add a custom trace channel for interactions:
+
+1. **Edit > Project Settings > Collision**
+2. Under **Trace Channels**, click **New Trace Channel**
+3. Name: `Interaction`
+4. Default Response: `Block`
+5. Click **Accept**
+
+Configure your world objects to respond to the Interaction channel appropriately.
+
+# Gameplay Tags
+
+UMI supports gameplay tags for categorization, equipment validation, filtering, and optional preset configurations. All tags are **fully data-driven** — you may use UMI with **any** tag structure, or none at all.
+
+UMI **never requires** specific tags to exist.
+
+---
+
+## **When You Might Use These Tags**
+
+If you plan to use UMI’s preset helpers (e.g., `SetupStandardArmorSlots()`, `SetupWeaponSlots()`), the example tags below will work immediately.
+
+If not, you are free to define your own hierarchy and assign tags however your game requires.
+
+---
+
+## **Adding Gameplay Tags**
+
+1. Go to **Edit → Project Settings → Gameplay Tags**
+2. Add or edit a **Gameplay Tag Source**  
+   *(or modify* `DefaultGameplayTags.ini` *directly)*
+3. Create tags as needed
+
+---
+
+## **Example Tag Structure**
+
+These are **optional examples** provided only as a starting point.
+
+### **Equipment Slots**
+
+Used by UMI’s preset slot setup functions:
+
+```
+[/Script/GameplayTags.GameplayTagsList]
+
+; Standard Armor Slots (SetupStandardArmorSlots)
++GameplayTagList=(Tag="Equipment.Slot.Head",DevComment="Head slot")
++GameplayTagList=(Tag="Equipment.Slot.Chest",DevComment="Chest slot")
++GameplayTagList=(Tag="Equipment.Slot.Legs",DevComment="Leg slot")
++GameplayTagList=(Tag="Equipment.Slot.Feet",DevComment="Feet slot")
++GameplayTagList=(Tag="Equipment.Slot.Hands",DevComment="Hands slot")
+
+; Weapon Slots (SetupWeaponSlots)
++GameplayTagList=(Tag="Equipment.Slot.MainHand",DevComment="Main hand")
++GameplayTagList=(Tag="Equipment.Slot.OffHand",DevComment="Off hand or shield")
+
+; Jewelry Slots (SetupJewelrySlots) - optional
++GameplayTagList=(Tag="Equipment.Slot.Ring1",DevComment="Ring slot 1")
++GameplayTagList=(Tag="Equipment.Slot.Ring2",DevComment="Ring slot 2")
++GameplayTagList=(Tag="Equipment.Slot.Necklace",DevComment="Neck slot")
+```
+
+---
+
+### **Equipment Types (Optional)**
+
+Useful for filtering or enforcing item rules:
+
+```
++GameplayTagList=(Tag="Equipment.Type.OneHanded")
++GameplayTagList=(Tag="Equipment.Type.TwoHanded")
++GameplayTagList=(Tag="Equipment.Type.Shield")
++GameplayTagList=(Tag="Equipment.Type.Armor")
+```
+
+---
+
+### **Item Rarity (Optional)**
+
+Commonly used for loot tables or UI display:
+
+```
++GameplayTagList=(Tag="Item.Rarity.Common")
++GameplayTagList=(Tag="Item.Rarity.Uncommon")
++GameplayTagList=(Tag="Item.Rarity.Rare")
++GameplayTagList=(Tag="Item.Rarity.Epic")
++GameplayTagList=(Tag="Item.Rarity.Legendary")
+```
+
+---
+
+### **Item Categories (Optional)**
+
+Useful for container filtering or crafting rules:
+
+```
++GameplayTagList=(Tag="Item.Category.Weapon")
++GameplayTagList=(Tag="Item.Category.Armor")
++GameplayTagList=(Tag="Item.Category.Consumable")
++GameplayTagList=(Tag="Item.Category.Resource")
++GameplayTagList=(Tag="Item.Category.Tool")
+```
+
+---
+
+### **Interaction Types (Optional)**
+
+For use with the Interaction System:
+
+```
++GameplayTagList=(Tag="Interaction.Pickup")
++GameplayTagList=(Tag="Interaction.Open")
++GameplayTagList=(Tag="Interaction.Harvest")
+```
+
+---
+
+### **Tool Types (Optional)**
+
+Paired with interaction or crafting requirements:
+
+```
++GameplayTagList=(Tag="Tool.Pickaxe")
++GameplayTagList=(Tag="Tool.Axe")
++GameplayTagList=(Tag="Tool.Hammer")
+```
+
+---
+
+## **Custom Tag Structures**
+
+You are free to define any tag hierarchy:
+
+```
++GameplayTagList=(Tag="MyGame.Gear.Helmet")
++GameplayTagList=(Tag="MyGame.Quality.Trash")
++GameplayTagList=(Tag="MyGame.Quality.Godlike")
+```
+
+UMI will use whatever tags you assign in your:
+
+- Item Data Assets
+- Equipment slot definitions
+- Container rules
+- Custom gameplay logic
+
+---
+
+## **Minimal Setup**
+
+You only need tags that **your items or slots actually reference**, such as:
+
+- Tags used in **equipment slot definitions**
+- Tags assigned to **Item Data Assets**
+- Tags used by **container restrictions**
+- Tags used by **your own filtering logic**
+
+UMI can be used with **zero tags** and expanded later as your item catalog grows.

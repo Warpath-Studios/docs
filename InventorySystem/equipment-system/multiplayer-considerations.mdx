@@ -1,0 +1,50 @@
+---
+title: "Multiplayer Considerations"
+description: "fully replicates:"
+---
+
+### **Replication**
+
+`EquipmentComponent` fully replicates:
+
+- Equipped items array
+- Visual updates
+
+### **Authority**
+
+All equipment changes are validated on the server. Client calls automatically forward to the server via RPC:
+
+```
+UFUNCTION(Server, Reliable)
+void Server_EquipItem(FItemInstance Item, int32 SlotIndex);
+
+UFUNCTION(Server, Reliable)
+void Server_UnequipItem(int32 SlotIndex);
+```
+
+### **Visual Updates**
+
+Visuals rebuild from the replicated `EquippedItems` array on each client automatically via `OnRep_EquippedItems`. If visuals are out of sync, call:
+
+```
+UFUNCTION(NetMulticast, Reliable)
+void Multicast_UpdateVisuals(int32 SlotIndex);
+```
+
+### Multiplayer Helper Functions
+
+```
+bool bIsServer   = EquipmentComponent->IsAuthority();    // True if running on server
+bool bIsLocal    = EquipmentComponent->IsLocalPlayer();  // True if local player's equipment
+```
+
+Use `IsLocalPlayer()` to skip cosmetic-only visual work on simulated proxies.
+
+### Debugging
+
+```
+// Call in PIE to print full equipment state to the Output Log
+EquipmentComponent->PrintDebugState();
+```
+
+`PrintDebugState` is also a CallInEditor button on the component — click it while PIE is paused to diagnose visual sync issues without writing any code.

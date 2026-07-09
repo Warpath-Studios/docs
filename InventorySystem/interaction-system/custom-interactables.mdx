@@ -1,0 +1,300 @@
+---
+title: "Custom Interactables"
+description: "Interaction Option Example:"
+---
+
+### Creating a Chest
+
+Blueprint: `BP_Chest`
+
+**Components:**
+
+```
+├─ StaticMeshComponent  (Chest Mesh)
+├─ InventoryComponent   (Storage)
+└─ InteractableComponent (Optional helper, if you use one)
+```
+
+**Interaction Option Example:**
+
+```
+Interaction Options:
+   [0]:
+      Tag: Interaction.Open
+      Prompt Text: "Press E to Open Chest"
+      Hold Duration: 0
+```
+
+---
+
+### Opening Container UI (C++ Example)
+
+```
+void AChest::OnInteract(APlayerController* PlayerController)
+{
+    AMyCharacter* Character = Cast<AMyCharacter>(PlayerController->GetPawn());
+    if (!Character) return;
+
+    UContainerWidget* ContainerUI = CreateWidget<UContainerWidget>(
+        PlayerController,
+        ContainerWidgetClass
+    );
+
+    ContainerUI->SetPlayerInventory(Character->InventoryComponent);
+    ContainerUI->SetContainerInventory(this->InventoryComponent);
+    ContainerUI->SetContainerName(ChestName);
+
+    ContainerUI->AddToViewport();
+
+    PlayerController->SetInputMode(FInputModeGameAndUI());
+    PlayerController->bShowMouseCursor = true;
+}
+```
+
+---
+
+### Transferring Items (UI Logic)
+
+Player → Chest
+
+```
+On drag from PlayerInventory to Chest:
+   PlayerInventory → TransferItem
+      From Index: [Player slot]
+      Target Inventory: ChestInventory
+      To Index: -1 (any free slot)
+      Quantity: [dragged quantity]
+```
+
+Chest → Player
+
+```
+On drag from ChestInventory to Player:
+   ChestInventory → TransferItem
+      From Index: [Chest slot]
+      Target Inventory: PlayerInventory
+      To Index: -1
+      Quantity: [dragged quantity]
+```
+
+---
+
+## **Hold Interactions**
+
+Use hold interactions for **harvesting, mining, long actions, etc.**
+
+### Configuration (Interaction Option)
+
+```
+Interaction Options:
+   [0]:
+      Tag: Interaction.Harvest
+      Prompt Text: "Hold E to Harvest Wood"
+      Hold Duration: 3.0   // 3 seconds
+```
+
+### Starting a Hold (C++ Concept)
+
+```
+InteractionComponent->StartHoldInteraction(
+    FocusedActor,
+    InteractionTag,
+    HoldDuration
+);
+```
+
+### Progress Feedback (Blueprint)
+
+```
+Tick (Interaction Widget)
+   ↓
+IsHoldingInteraction?
+   False →
+      Hide progress bar
+   True →
+      GetHoldProgress (0–1)
+      Set progress bar percent
+      Show progress bar
+```
+
+### Completion & Cancellation
+
+- **On Hold Completed** → Execute the interaction (give items, open door, etc.)
+- **On Hold Cancelled** → Reset UI, optionally play cancel sound
+
+These are usually exposed as Blueprint events or delegates on `InteractionComponent`.
+
+---
+
+## **Tool Requirements**
+
+Gate certain interactions behind tools (e.g., pickaxe for mining, axe for chopping).
+
+### Configuration (Interaction Option)
+
+```
+Interaction Options:
+   [0]:
+      Tag: Interaction.Mine
+      Prompt Text: "Hold E to Mine"
+      Hold Duration: 4.0
+      Required Tools: [Tool.Pickaxe]
+```
+
+### Validation Pattern
+
+```
+When attempting interaction:
+   For each RequiredTool in RequiredTools:
+      Check if player has tool
+   If missing:
+      Show "Requires Pickaxe" or similar
+      Block interaction
+```
+
+C++ Tool Check Example (Character)
+
+```
+bool AMyCharacter::HasTool(FGameplayTag ToolTag)
+{
+    // Check equipped items
+    for (const FEquippedItemEntry& Entry : EquipmentComponent->GetAllEquippedItems())
+    {
+        if (Entry.Item.ItemData->GameplayTags.HasTag(ToolTag))
+        {
+            return true;
+        }
+    }
+
+    // Check inventory
+    const TArray<FItemInstance>& AllItems = InventoryComponent->GetAllItems();
+    for (const FItemInstance& Item : AllItems)
+    {
+        if (Item.ItemData->GameplayTags.HasTag(ToolTag))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+```
+
+---
+
+## **Range & Line-of-Sight**
+
+### Trace Configuration
+
+Typical defaults:
+
+- `TraceDistance`: `500.0f`
+- `bUseSphereTrace`: `true`
+- `SphereTraceRadius`: `20.0f`
+
+```
+InteractionComponent->TraceDistance      = 500.0f;
+InteractionComponent->bUseSphereTrace   = true;
+InteractionComponent->SphereTraceRadius = 20.0f;
+```
+
+### Trace Types
+
+- **Line Trace:** Precise, requires exact aim
+- **Sphere Trace:** More forgiving, better UX
+- **Capsule Trace:** Useful for tall objects
+
+### Line-of-Sight
+
+Enable per-interaction:
+
+```
+bRequiresLineOfSight: true
+```
+
+Prevents interacting through walls/obstacles.
+
+---
+
+## **Animation Integration**
+
+Use interaction animations for better feel (pickups, opening chests, etc.).
+
+### Basic Pattern
+
+```
+Start Interaction
+   ↓
+Play Anim Montage
+   ↓
+When montage finishes → Complete Interaction
+```
+
+C++ Example (Pickup with Animation)
+
+```
+void AMyCharacter::PerformPickup(AWorldItemActor* WorldItem)
+{
+    if (PickupMontage)
+    {
+        float Duration = PlayAnimMontage(PickupMontage);
+
+        FTimerHandle TimerHandle;
+        GetWorld()->GetTimerManager().SetTimer(
+            TimerHandle,
+            [this, WorldItem]()
+            {
+                InventoryComponent->AddItemInstance(WorldItem->ItemInstance);
+                WorldItem->Destroy();
+            },
+            Duration,
+            false
+        );
+    }
+    else
+    {
+        // Instant pickup
+        InventoryComponent->AddItemInstance(WorldItem->ItemInstance);
+        WorldItem->Destroy();
+    }
+}
+```
+
+---
+
+## **Foliage Interactions**
+
+UMI supports interacting with **foliage instances** placed via the Foliage tool.
+
+### Foliage Hit Detection (C++)
+
+```
+FHitResult HitResult = InteractionComponent->GetHitFoliageInstance();
+
+if (HitResult.bBlockingHit)
+{
+    int32 FoliageIndex = HitResult.Item; // instance index
+    UInstancedStaticMeshComponent* FoliageMesh =
+        Cast<UInstancedStaticMeshComponent>(HitResult.Component);
+
+    // harvest / convert / notify foliage manager
+    HarvestFoliage(FoliageMesh, FoliageIndex);
+}
+```
+
+### Server RPC Pattern
+
+All interactions should be server-authoritative:
+
+```
+InteractionComponent->Server_PerformFoliageInteraction(
+    FoliageMesh,
+    FoliageIndex,
+    InteractionTag
+);
+```
+
+Foliage integration is typically bridged to:
+
+- Loot System (to spawn items or add directly)
+- Respawn Manager (to regrow foliage later)

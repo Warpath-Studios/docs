@@ -1,0 +1,279 @@
+---
+title: "Getting Started"
+description: "This page walks you through the basic setup and usage of the Respawn Manager subsystem."
+---
+
+This page walks you through the basic setup and usage of the Respawn Manager subsystem.  
+By the end, you’ll be able to:
+
+- Register actors for respawn
+- Trigger respawn callbacks
+- Restore actors to an active state
+- Use the system from both **Blueprints** and **C++**
+
+This is the minimal setup needed to start using respawnable objects in your project.
+
+---
+
+# **1. Subsystem Overview**
+
+The Respawn Manager is implemented as a **World Subsystem**.  
+This means:
+
+- It is automatically created when the world loads
+- It persists for the entire lifetime of the world
+- Any actor can access it easily through Blueprint or C++
+
+No project settings or manual subsystem creation is required.
+
+---
+
+# **2. Accessing the Respawn Manager**
+
+### **Blueprint**
+
+You can access the manager using:
+
+```
+Get Subsystem → RespawnManagerSubsystem
+```
+
+Node path:
+
+```
+Get Game Instance World
+    ↓
+Get World Subsystem
+    Class = RespawnManagerSubsystem
+```
+
+### **C++**
+
+```
+URespawnManagerSubsystem* RespawnManager =
+    GetWorld()->GetSubsystem<URespawnManagerSubsystem>();
+```
+
+If this returns null, the world hasn't fully initialized yet (rare, usually only in constructors).  
+Access it in **BeginPlay**, **PostInitializeComponents**, or Actor-tick functions.
+
+---
+
+# **3. Marking an Actor as Respawnable**
+
+To be used with the Respawn Manager, an actor should:
+
+1. Have a way to become **inactive**
+2. Register itself for respawn
+3. Implement a **respawn callback**
+
+There are two ways to handle the callback:
+
+---
+
+## **Option A — Implement the Respawn Interface (Recommended)**
+
+Create (or use the provided) Blueprint/C++ interface:
+
+### Interface: `BPI_Respawnable`
+
+Methods:
+
+- **OnRespawnRequested()**  
+  Called by the manager when it’s time to respawn.
+- **GetRespawnDelay()** *(optional)*  
+  Allows different actors to specify their own cooldown.
+
+Using an interface keeps the subsystem decoupled from specific classes and makes your system plugin-friendly.
+
+---
+
+## **Option B — Direct Function Call**
+
+If you don’t want an interface, you can expose a normal function such as:
+
+```
+Respawn()
+```
+
+And tell the subsystem to call that function on the actor.
+
+This is fine for internal projects, but the interface is cleaner and scales better.
+
+---
+
+# **4. Registering a Respawn Request**
+
+When an actor is harvested, destroyed, looted, or otherwise becomes inactive, call:
+
+### **Blueprint**
+
+```
+RespawnManagerSubsystem → Register Respawn Request
+    Target Actor = Self
+    Delay        = Respawn Time
+```
+
+### **C++**
+
+```
+RespawnManager->RegisterRespawnRequest(this, RespawnTime);
+```
+
+This adds the actor to the subsystem's internal respawn queue.
+
+The actor **does not** need to run timers or track the countdown.
+
+---
+
+# **5. Respawn Callback**
+
+When the delay expires, the subsystem triggers the callback.
+
+### **Blueprint (Interface)**
+
+Implement:
+
+```
+Event OnRespawnRequested
+```
+
+Inside your actor:
+
+- Reset collision / visibility
+- Reset internal variables (`bHasBeenHarvested=false`, etc.)
+- Reset loot (`LootComponent → Reset Loot`)
+- Restore meshes or materials
+- Enable interaction again
+
+### **C++ (Interface Implementation)**
+
+```
+void AResourceNode::OnRespawnRequested_Implementation()
+{
+    bHasBeenHarvested = false;
+
+    if (LootComponent)
+    {
+        LootComponent->ResetLoot();
+    }
+
+    Mesh->SetVisibility(true);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+```
+
+---
+
+# **6. First Example — Simple Resource Node (Blueprint)**
+
+```
+Event On Harvested
+   ↓
+Set bHasBeenHarvested = true
+Hide Mesh
+Disable Collision
+   ↓
+Get Respawn Manager
+   ↓
+Register Respawn Request
+   Target Actor = Self
+   Delay        = RespawnTime
+```
+
+Then implement:
+
+```
+Event OnRespawnRequested
+   ↓
+Set bHasBeenHarvested = false
+LootComponent → Reset Loot
+Show Mesh
+Enable Collision
+```
+
+This is the simplest working pattern.
+
+---
+
+# **7. First Example — Simple Resource Node (C++)**
+
+```
+void AResourceNode::OnHarvested()
+{
+    if (bHasBeenHarvested)
+        return;
+
+    bHasBeenHarvested = true;
+
+    Mesh->SetVisibility(false);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    if (URespawnManagerSubsystem* RM = GetWorld()->GetSubsystem<URespawnManagerSubsystem>())
+    {
+        RM->RegisterRespawnRequest(this, RespawnTime);
+    }
+}
+```
+
+Respawn callback:
+
+```
+void AResourceNode::OnRespawnRequested_Implementation()
+{
+    bHasBeenHarvested = false;
+
+    LootComponent->ResetLoot();
+    Mesh->SetVisibility(true);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+```
+
+---
+
+# **8. What Counts as “Inactive”?**
+
+A respawnable actor typically becomes inactive by:
+
+- Being harvested
+- Running out of loot
+- Being destroyed or visually disabled
+- Being consumed (e.g., traps, destructibles, buildings collapsing)
+- Being hidden or placed into “cooldown” state
+
+Inactivity is **your** definition, not the subsystem's.  
+The Respawn Manager doesn’t enforce behavior—it just triggers respawn events.
+
+---
+
+# **9. Good Defaults to Use**
+
+| Setting | Recommended |
+| --- | --- |
+| Respawn Time | 120–600 seconds (2–10 minutes) |
+| Use Interface | **Yes** |
+| Register on server | **Yes** (server authoritative) |
+| Visual restoration | In `OnRespawnRequested` |
+| Collision | Disabled when inactive, enabled on respawn |
+| Loot reset | Call `ResetLoot()` for LootComponents |
+
+---
+
+# **10. Additional Tips**
+
+### ✔️ Centralize All Respawn Logic
+
+Use Respawn Manager for every respawnable object in your project.  
+Don’t mix per-actor timers and subsystem timers — consistency matters.
+
+### ✔️ Make respawn callback idempotent
+
+Calling it twice should not break anything.
+
+### ✔️ Avoid doing heavy work on respawn
+
+Keep callbacks lightweight; defer heavy work to async code if needed.
+
+### ✔️ Use interfaces for interoperability
+
+Other UM… plugins can integrate with your respawnable actors instantly.

@@ -1,0 +1,103 @@
+---
+title: "Loot Component"
+description: "is the runtime piece that actually rolls a and returns/creates items."
+---
+
+`ULootComponent` is the runtime piece that actually rolls a `LootTable` and returns/creates items.
+
+You typically add it to:
+
+- Chests
+- Enemies
+- Resource nodes (trees, rocks, ore veins)
+- Any “loot source” actor in your game
+
+### Adding to Actors
+
+Blueprint
+
+1. Open your **Actor Blueprint** (Chest, Enemy, Resource Node, etc.)
+2. **Add Component → Loot Component**
+3. Configure in details:
+
+- `Loot Table`: `LT_YourLootTable`
+- `Single Use`: `true` or `false`
+- `Minimum Rarity`: `None` or a specific tag
+- `Item Level`: `1` (or your scaling level)
+- `Auto Detect Level`: `true/false`
+
+  - If true, reads a level property from the owning actor (e.g. `CharacterLevel`)
+
+C++
+
+```
+// In Actor.h
+UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+ULootComponent* LootComponent;
+
+// In Actor.cpp constructor
+LootComponent = CreateDefaultSubobject<ULootComponent>(TEXT("LootComponent"));
+LootComponent->LootTable = LT_ChestLoot;    // Assigned via C++ or in BP
+LootComponent->bSingleUse = true;
+LootComponent->ItemLevel  = 1;
+```
+
+---
+
+### Generating Loot
+
+`GenerateLoot` rolls the table and returns an `FLootResult`.
+
+Blueprint
+
+```
+LootComponent → Generate Loot
+   Return: Loot Result (FLootResult)
+```
+
+You can then:
+
+- Iterate `Loot Result.Spawned Items`
+- Add each item to inventory, or
+- Spawn `WorldItemActor` in the world
+
+C++
+
+```
+FLootResult Result = LootComponent->GenerateLoot();
+
+for (const FLootedItem& LootedItem : Result.SpawnedItems)
+{
+    UE_LOG(LogTemp, Log, TEXT("Dropped: %s x%d at rarity %s"),
+        *LootedItem.ItemData->ItemID.ToString(),
+        LootedItem.Quantity,
+        *LootedItem.RolledRarity.ToString()
+    );
+}
+```
+
+---
+
+### Checking / Resetting Loot State
+
+Has Been Looted?
+
+```
+bool bAlreadyLooted = LootComponent->HasBeenLooted();
+if (bAlreadyLooted && LootComponent->bSingleUse)
+{
+    ShowNotification(TEXT("Already looted"));
+    return;
+}
+```
+
+Blueprint: `Has Been Looted` node on `LootComponent`.
+
+Reset Loot
+
+For respawnable containers/nodes:
+
+- Blueprint: `Reset Loot` node
+- C++: `LootComponent->ResetLoot();`
+
+This clears internal state so the next `GenerateLoot` call re-rolls the table.

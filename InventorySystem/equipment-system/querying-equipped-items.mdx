@@ -1,0 +1,92 @@
+---
+title: "Querying Equipped Items"
+description: "Returns a flat array of item instances (one per occupied slot, in no guaranteed order)."
+---
+
+### **Get Equipped Item**
+
+**Blueprint**:
+
+```
+[EquipmentComponent] → GetEquippedItem
+   Slot Index: 0
+   Return: [FItemInstance]
+```
+
+**C++**:
+
+```
+FItemInstance EquippedHelmet = EquipmentComponent->GetEquippedItem(0);
+if (!EquippedHelmet.IsEmpty())
+{
+    // Character is wearing a helmet
+}
+```
+
+### **Is Slot Equipped**
+
+**Blueprint**:
+
+```
+[EquipmentComponent] → IsSlotEquipped
+   Slot Index: 0
+   Return: true/false
+```
+
+**C++**:
+
+```
+bool bWearingHelmet = EquipmentComponent->IsSlotEquipped(0);
+```
+
+### **Get All Equipped Items**
+
+Returns a flat array of item instances (one per occupied slot, in no guaranteed order). If you need slot indices, iterate over `GetAllSlotDefinitions()` and call `GetEquippedItem` per slot instead.
+
+**C++**:
+
+```
+// Flat array — item instances only, no slot index
+TArray<FItemInstance> AllItems = EquipmentComponent->GetAllEquippedItems();
+
+// With slot indices — iterate slot definitions
+TArray<FEquipmentSlotDefinition> Slots = EquipmentComponent->GetAllSlotDefinitions();
+for (const FEquipmentSlotDefinition& Slot : Slots)
+{
+    FItemInstance Item = EquipmentComponent->GetEquippedItem(Slot.SlotIndex);
+    if (!Item.IsEmpty())
+    {
+        UE_LOG(LogTemp, Log, TEXT("Slot %d (%s): %s"),
+               Slot.SlotIndex,
+               *Slot.SlotName.ToString(),
+               *Item.ItemID.ToString());
+    }
+}
+```
+
+### Slot Definition Queries
+
+```
+// Get definition for a single slot
+FEquipmentSlotDefinition Def = EquipmentComponent->GetSlotDefinition(SlotIndex);
+
+// Get all slot definitions
+TArray<FEquipmentSlotDefinition> AllDefs = EquipmentComponent->GetAllSlotDefinitions();
+
+// Total number of configured slots
+int32 NumSlots = EquipmentComponent->GetNumEquipmentSlots();
+```
+
+### **Get Slot Mesh Component**
+
+Get the mesh component for a slot:
+
+**C++**:
+
+```
+USkeletalMeshComponent* HeadMesh = EquipmentComponent->GetSlotMeshComponent(0);
+if (HeadMesh)
+{
+    // Do something with the mesh
+}
+```

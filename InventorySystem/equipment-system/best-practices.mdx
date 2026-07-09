@@ -1,0 +1,101 @@
+---
+title: "Best Practices"
+description: "1."
+---
+
+**1. Always call** `InitializeEquipment()` — pass equipment inventory, player inventory, and base mesh; required before any equip operations
+
+**2. Use** `CharacterEquipmentSetup`for first-time character setup — the CallInEditor buttons handle mesh component creation and slot wiring automatically
+
+**3. Use preset slot configs** — `SetupStandardArmorSlots()` etc. for common layouts
+
+**4. \*\*Set up mesh components properly\*\*** — parent to correct sockets with Master Pose
+
+**5. Use body part hiding** — prevents clipping issues
+
+**6. Validate before equipping** — use `CanEquipItemInSlot()` to prevent errors
+
+**7. Handle two-handed weapons** — implement custom logic for weapon conflicts in `OnEquipmentChanged`
+
+**8. Use material overrides** — key by bare rarity name `"Common"`, `"Rare"`, etc.), not full tag path
+
+**9. Bind to events** — keep UI synchronized; `OnEquipmentChanged` gives you old and new item in one call
+
+**10. Test in multiplayer** — ensure visuals update on all clients; use `PrintDebugState` to compare state across roles
+
+---
+
+## **Common Patterns**
+
+### **Equip from Inventory**
+
+```
+// Player double-clicks item in inventory
+void EquipFromInventory(int32 InventorySlot)
+{
+    FItemInstance Item = InventoryComponent->GetItemAtIndex(InventorySlot);
+
+    if (!Item.IsEmpty() && Item.ItemData->bIsEquipable)
+    {
+        // Find valid slot
+        TArray<int32> ValidSlots = EquipmentComponent->FindValidSlotsForItem(Item);
+        if (ValidSlots.Num() > 0)
+        {
+            // Equip to first valid slot
+            bool bSuccess = EquipmentComponent->EquipItemToSlot(Item, ValidSlots[0]);
+            if (bSuccess)
+            {
+                // Remove from inventory
+                InventoryComponent->RemoveItemAtIndex(InventorySlot, 1);
+            }
+        }
+    }
+}
+```
+
+### **Swap Equipment**
+
+```
+// Right-click equipped item to unequip
+void UnequipToInventory(int32 EquipmentSlot)
+{
+    FItemInstance EquippedItem = EquipmentComponent->GetEquippedItem(EquipmentSlot);
+
+    if (!EquippedItem.IsEmpty())
+    {
+        // Check if inventory has space
+        if (InventoryComponent->GetEmptySlotCount() > 0)
+        {
+            // Unequip (returns to inventory automatically)
+            EquipmentComponent->UnequipItemFromSlot(EquipmentSlot);
+        }
+        else
+        {
+            ShowNotification("Inventory full");
+        }
+    }
+}
+```
+
+### **Quick Weapon Switch**
+
+```
+// Press 1 to equip weapon from hotbar
+void QuickEquipWeapon(int32 HotbarSlot)
+{
+    FItemInstance Item = HotbarComponent->GetItemAtIndex(HotbarSlot);
+
+    if (!Item.IsEmpty() && Item.ItemData->bIsWeapon)
+    {
+        int32 MainHandSlot = EquipmentComponent->FindSlotIndexByTag(
+            FGameplayTag::RequestGameplayTag("Equipment.Slot.MainHand")
+        );
+
+        // Unequip current weapon
+        EquipmentComponent->UnequipItemFromSlot(MainHandSlot);
+
+        // Equip new weapon
+        EquipmentComponent->EquipItemToSlot(Item, MainHandSlot);
+    }
+}
+```

@@ -1,0 +1,133 @@
+---
+title: "Serialization Structures"
+description: "All saveable data is serialized into :"
+---
+
+### **Save Record**
+
+All saveable data is serialized into `FSaveRecord`:
+
+```
+struct FSaveRecord
+{
+    FString Type;           // Record type identifier
+    TArray<uint8> Bytes;    // Serialized data
+};
+```
+
+### **File Header**
+
+Save files include metadata:
+
+```
+struct FFileHeader
+{
+    int32 FileSchemaVersion;     // Format version
+    float WorldTimeSeconds;      // Save timestamp
+};
+```
+
+---
+
+## **ISaveable Interface**
+
+### **Overview**
+
+Implement `ISaveable` to make any component or actor save-able.
+
+**Location**: `/Public/Save/ISaveable.h`
+
+### **Required Methods**
+
+```
+class ISaveable
+{
+public:
+    virtual FGuid GetSaveGuid() const = 0;
+    virtual FName GetSaveBucket() const = 0;
+    virtual FSaveRecord BuildSaveRecord() = 0;
+    virtual void ApplySaveRecord(const FSaveRecord& Record) = 0;
+};
+```
+
+### **GetSaveGuid()**
+
+Return a unique, persistent GUID for this saveable:
+
+```
+FGuid GetSaveGuid() const override
+{
+    return ComponentGuid;  // Persistent GUID
+}
+```
+
+**Important**: The GUID must be:
+
+- Unique across all saveables
+- Persistent (same every time)
+- Saved in the component/actor
+
+### **GetSaveBucket()**
+
+Return the bucket name for organization:
+
+```
+FName GetSaveBucket() const override
+{
+    return "Players";  // or "World_Containers", "Custom", etc.
+}
+```
+
+**Common Buckets**:
+
+- `Players`: Player data
+- `World_Containers`: World container state
+- `Crafting`: Crafting stations
+- Custom: Your own categories
+
+### **BuildSaveRecord()**
+
+Serialize your data to bytes:
+
+```
+FSaveRecord BuildSaveRecord() override
+{
+    FSaveRecord Record;
+    Record.Type = "InventoryComponent";
+
+    // Serialize inventory data
+    FMemoryWriter Writer(Record.Bytes);
+    FInventorySaveData SaveData;
+    SaveData.Items = GetAllItems();
+    SaveData.MaxSlots = MaxSlots;
+    SaveData.MaxWeight = MaxWeight;
+
+    Writer << SaveData;
+
+    return Record;
+}
+```
+
+### **ApplySaveRecord()**
+
+Deserialize and apply saved data:
+
+```
+void ApplySaveRecord(const FSaveRecord& Record) override
+{
+    if (Record.Type != "InventoryComponent") return;
+
+    // Deserialize
+    FMemoryReader Reader(Record.Bytes);
+    FInventorySaveData SaveData;
+    Reader << SaveData;
+
+    // Apply
+    MaxSlots = SaveData.MaxSlots;
+    MaxWeight = SaveData.MaxWeight;
+    Items = SaveData.Items;
+
+    // Notify UI
+    OnInventoryChanged.Broadcast();
+}
+```

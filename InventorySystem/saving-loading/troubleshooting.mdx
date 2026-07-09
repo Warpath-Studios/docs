@@ -1,0 +1,31 @@
+---
+title: "Troubleshooting"
+description: "1."
+---
+
+### **Data Not Saving**
+
+**Check**:
+
+1. Is component registered? (`RegisterSaveable()`)
+2. Is GUID valid and persistent?
+3. Is autosave enabled?
+4. Is component marked dirty?
+
+### **Data Not Loading**
+
+**Check**:
+
+1. Is save file present?
+2. Is bucket name correct?
+3. Is GUID matching?
+4. Is `ApplySaveRecord()` implemented correctly?
+
+### **Performance Issues**
+
+**Solutions**:
+
+1. Increase `MaxOpsPerTick` if loading is too slow
+2. Decrease autosave frequency
+3. Reduce saved data size
+4. Use compression

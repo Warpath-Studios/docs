@@ -1,0 +1,144 @@
+---
+title: "Quick Start"
+description: "1."
+---
+
+### **1. Create a Merchant Actor**
+
+In Blueprint:
+
+1. Create new Actor Blueprint (e.g., `BP_Merchant_Blacksmith`)
+2. Add `MerchantComponent`
+3. Add `InteractableComponent`
+4. Add InteractInterface via Class Settings -> Implemented Interfaces
+5. Configure merchant behavior
+
+### **2. Configure Stock**
+
+```
+// Example: Blacksmith merchant
+Config:
+  bHasStock = true
+  bBuysAnything = false
+  bHasBuyList = true
+  bReplenishOnBuyback = false          // Doesn't resell bought items
+  MarketFeePercent = 10.0              // 10% transaction fee
+  BuybackPercent = 30.0                // Buys at 30% value
+  AcceptedCurrency = GoldCoinAsset
+  MaxInteractionDistance = 500.0
+
+StockItems:
+  [0] Iron Sword
+      MaxStock = 5
+      CurrentStock = 5
+      UnitPriceOverride = 150.0        // Custom price (overrides item default)
+      ReplenishMode = NeverReplenish   // Don't resell
+
+  [1] Steel Armor
+      MaxStock = 3
+      CurrentStock = 3
+      UnitPriceOverride = -1.0         // Use item's base price
+      ReplenishMode = NeverReplenish
+
+  [2] Health Potion
+      MaxStock = 20
+      CurrentStock = 20
+      UnitPriceOverride = -1.0
+      ReplenishMode = UseVendorDefault
+
+BuyList:
+  - Ore_Iron
+  - Ore_Steel
+  - Weapon_Damaged (for repairs)
+```
+
+### **3. Usage in Blueprints**
+
+**Opening Merchant UI**
+
+```
+// On player interaction
+FMerchantSnapshot Snapshot = MerchantComponent->OpenVendor(PlayerController);
+
+// Display UI with:
+// - Snapshot.Config (merchant settings)
+// - Snapshot.StockItems (items for sale)
+// - Snapshot.BuyList (items merchant buys)
+```
+
+**Purchasing Items**
+
+```
+// Step 1: Get quote
+FPurchaseQuote Quote = MerchantComponent->QuotePurchase(PlayerController, ItemData, Quantity);
+
+if (Quote.bSuccess)
+{
+    // Display to player:
+    // - Quote.UnitPrice
+    // - Quote.Subtotal
+    // - Quote.Fee
+    // - Quote.Total
+
+    // Step 2: Confirm purchase
+    MerchantComponent->Server_ConfirmPurchase(
+        PlayerController,
+        ItemData,
+        Quantity,
+        Quote.Total,      // For validation
+        Quote.QuoteNonce  // For idempotency
+    );
+}
+else
+{
+    // Handle error: Quote.ErrorCode
+    switch (Quote.ErrorCode)
+    {
+        case ERR_NO_STOCK:
+            DisplayMessage("Out of stock!");
+            break;
+        case ERR_INSUFFICIENT_FUNDS:
+            DisplayMessage("Not enough gold!");
+            break;
+        case ERR_INVENTORY_FULL:
+            DisplayMessage("Inventory full!");
+            break;
+    }
+}
+```
+
+**Selling Items**
+
+```
+// Step 1: Get quote
+FSellQuote Quote = MerchantComponent->QuoteSell(PlayerController, ItemData, Quantity);
+
+if (Quote.bSuccess)
+{
+    // Display offer to player:
+    // - Quote.UnitBuyPrice
+    // - Quote.Total (what player receives)
+
+    // Step 2: Confirm sale
+    MerchantComponent->Server_ConfirmSell(
+        PlayerController,
+        ItemData,
+        Quantity,
+        Quote.Total,
+        Quote.QuoteNonce
+    );
+}
+else
+{
+    // Handle error
+    switch (Quote.ErrorCode)
+    {
+        case ERR_NOT_BUYING:
+            DisplayMessage("Merchant doesn't buy items.");
+            break;
+        case ERR_NOT_IN_BUYLIST:
+            DisplayMessage("Merchant doesn't want this item.");
+            break;
+    }
+}
+```

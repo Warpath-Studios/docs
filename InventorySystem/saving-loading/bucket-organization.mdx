@@ -1,0 +1,35 @@
+---
+title: "Bucket Organization"
+description: "Buckets organize saves by category for efficient loading and streaming."
+---
+
+### **What Are Buckets?**
+
+Buckets organize saves by category for efficient loading and streaming.
+
+### **Common Buckets**
+
+| **Bucket Name** | **Contents** | **Load Timing** |
+| --- | --- | --- |
+| `Players` | Player inventory, equipment | On player spawn |
+| `World_Containers` | Chest contents, storage | On level load |
+| `Crafting` | Crafting station state | On level load |
+| `Custom` | Your custom data | As needed |
+
+### **Level Streaming**
+
+Buckets support level streaming:
+
+```
+Main Level Loaded:
+   ↓
+Load "Players" bucket
+   ↓
+Player Spawns with saved data
+   ↓
+SubLevel_Forest Loaded:
+   ↓
+Load "World_Containers_Forest" bucket
+   ↓
+Chests populated with saved contents
+```

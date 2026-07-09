@@ -1,0 +1,42 @@
+---
+title: "Quick Start with CharacterEquipmentSetup"
+description: "is an editor-time helper component that wires up your character's equipment in a few clicks — no C++ required."
+---
+
+`UCharacterEquipmentSetup` is an editor-time helper component that wires up your character's equipment in a few clicks — no C++ required. Add it alongside `EquipmentComponent`, configure your slots in the Details panel, then bake everything with a single button. Remove the component afterward; `EquipmentComponent` carries all the runtime state. This is an optional helper component.
+
+![b3ad4de483506437b34f0d623ab12de8.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2F22fc5ca2-d115-4f05-9ad8-4106d785f5a1%2Fimages%2Fb3ad4de483506437b34f0d623ab12de8-4efc6ec4-33df-405a-a81b-bc58532a871b.png "b3ad4de483506437b34f0d623ab12de8.png")
+
+### Steps:
+
+1. Add both `EquipmentComponent` and `CharacterEquipmentSetup` to your character Blueprint.
+
+2. On `CharacterEquipmentSetup`, set \*\*Equipment Component\*\* to your `EquipmentComponent`.
+
+3. Expand \*\*Custom Equipment Slots\*\* and fill in your slot definitions (or use a preset button — see below).
+
+4. Click \*\*Setup Equipment System\*\* in the Details panel — this creates mesh components and pushes slots into `EquipmentComponent`.
+
+5. After setup, you can remove `CharacterEquipmentSetup`; it is not needed at runtime.
+
+\*\*CallInEditor buttons on `CharacterEquipmentSetup`\*\*:
+
+| Button | What it does |
+
+|--------|-------------|
+
+| `Setup Equipment System` | Runs the full setup: creates mesh components + configures slots |
+
+| `Create Mesh Components` | Only creates missing skeletal mesh components |
+
+| `Configure Equipment Slots` | Only pushes slot definitions to `EquipmentComponent` |
+
+| `Find Components By Name` | Auto-assigns `EquipmentComponent` reference if not set |
+
+| `Add Standard Armor Slots` | Appends Helmet/Chest/Legs/Boots/Gloves to Custom Slots |
+
+| `Add Jewelry Slots` | Appends Ring 1/Ring 2/Necklace/Earrings |
+
+| `Add Weapon Slots` | Appends Main Hand/Off Hand |
+
+| `Add Clothing Slots` | Appends Hat/Shirt/Pants/Cloak |

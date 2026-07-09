@@ -1,0 +1,52 @@
+---
+title: "Removing Items"
+description: "Remove a specific quantity by ItemID:"
+---
+
+**Remove by ID**
+
+Remove a specific quantity by ItemID:
+
+**Blueprint**:
+
+```
+[InventoryComponent] → RemoveItemByID
+   ItemID: HealthPotion
+   Quantity: 3
+   Return: Actual removed count
+```
+
+**C++**:
+
+```
+int32 RemovedCount = InventoryComponent->RemoveItemByID("HealthPotion", 3);
+if (RemovedCount < 3)
+{
+    UE_LOG(LogTemp, Warning, TEXT("Only removed %d items, not enough in inventory"), RemovedCount);
+}
+```
+
+**Remove by Data Asset**
+
+```
+int32 Removed = InventoryComponent->RemoveItemByAsset(HealthPotionAsset, 2);
+```
+
+**Remove from Specific Slot**
+
+```
+bool bSuccess = InventoryComponent->RemoveItemAtIndex(SlotIndex, Quantity);
+```
+
+**Take Item (Remove and Return)**
+
+Remove an item and get the instance:
+
+```
+FItemInstance TakenItem = InventoryComponent->TakeItemAt(SlotIndex, Quantity);
+if (!TakenItem.IsEmpty())
+{
+    // Do something with the taken item
+    SpawnWorldItem(TakenItem);
+}
+```

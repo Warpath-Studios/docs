@@ -1,0 +1,77 @@
+---
+title: "Events"
+description: "Fired when any equipment slot changes:"
+---
+
+### **OnEquipmentChanged**
+
+Fired when any equipment slot changes:
+
+**Blueprint**:
+
+```
+Event On Equipment Changed
+   Slot Index:       [int32]
+   New Item:         [FItemInstance]
+   Old Item:         [FItemInstance]
+   Slot Definition:  [FEquipmentSlotDefinition]
+   ↓
+   [Update UI slot]
+```
+
+![3ef4b82eccce849222fbabe9e358c1a1.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2Fe08f61de-15eb-440f-bf65-0d9479dea51c%2Fimages%2F3ef4b82eccce849222fbabe9e358c1a1-302137c6-f1a5-4c09-8604-237e1ba6f8cc.png "3ef4b82eccce849222fbabe9e358c1a1.png")
+
+**C++**:
+
+```
+EquipmentComponent->OnEquipmentChanged.AddDynamic(this, &AMyClass::HandleEquipmentChanged);
+
+void AMyClass::HandleEquipmentChanged(
+    int32 SlotIndex,
+    const FItemInstance& NewItem,
+    const FItemInstance& OldItem,
+    const FEquipmentSlotDefinition& SlotDefinition)
+{
+    // Update equipment UI
+    EquipmentUI->UpdateSlot(SlotIndex, NewItem);
+
+    // OldItem is valid if something was previously equipped
+    if (!OldItem.IsEmpty())
+    {
+        UE_LOG(LogTemp, Log, TEXT("Replaced %s in slot %s"),
+               *OldItem.ItemID.ToString(), *SlotDefinition.SlotName.ToString());
+    }
+}
+```
+
+### **OnEquipmentVisualUpdate**
+
+Fired when visuals are updated:
+
+**C++**:
+
+```
+EquipmentComponent->OnEquipmentVisualUpdate.AddDynamic(this, &AMyClass::HandleVisualUpdate);
+
+void AMyClass::HandleVisualUpdate(
+    int32 SlotIndex,
+    USkeletalMesh* NewMesh,
+    const FEquipmentSlotDefinition& SlotDefinition)
+{
+    // NewMesh is null when the slot was cleared
+}
+```
+
+### OnEquippedItemChargesChanged
+
+**C++**:
+
+```
+EquipmentComponent->OnEquippedItemChargesChanged.AddDynamic(this, &AMyClass::HandleChargesChanged);
+
+void AMyClass::HandleChargesChanged(int32 SlotIndex, int32 OldCharges, int32 NewCharges)
+{
+    // Refresh ammo counter in HUD
+    HUD->SetAmmoCount(NewCharges);
+}
+```

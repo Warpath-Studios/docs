@@ -1,0 +1,82 @@
+---
+title: "Interaction System"
+description: "The Interaction System handles how players:"
+---
+
+The **Interaction System** handles how players:
+
+- Pick up items
+- Open containers
+- Harvest foliage and resources
+- Trigger custom world interactions (chests, levers, traps, etc.)
+
+UMI uses an `UInteractionComponent` placed on the **Player Controller** to centralize all interaction logic.
+
+**Location:**  
+`/Public/InteractionSystem/InteractionComponent.h`
+
+---
+
+## **Using UMI with the Interaction System**
+
+### What InteractionComponent Does
+
+`UInteractionComponent` is responsible for:
+
+- Raycast / shape traces to detect interactable objects
+- Range validation and line-of-sight checks
+- Instant and **hold-to-interact** actions
+- Tool requirements (e.g., requires pickaxe)
+- Optional interaction animations
+- Foliage interaction support (for foliage-based resources)
+
+---
+
+## **Setup**
+
+### Add InteractionComponent to Player Controller
+
+> **Important:** `InteractionComponent` goes on the **Player Controller**, not the Character.
+
+Blueprint Setup
+
+1. Open your **Player Controller Blueprint**
+2. **Add Component → Interaction Component**
+3. Configure properties, for example:
+
+- `Trace Distance`: `500` (cm)
+- `bUseSphereTrace`: `true`
+- `SphereTraceRadius`: `20`
+- `bDrawDebugTrace`: `false`
+
+You can expose these as variables if you want per-controller tuning.
+
+C++ Setup
+
+```
+// In PlayerController.h
+UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+UInteractionComponent* InteractionComponent;
+
+// In PlayerController.cpp constructor
+AMyPlayerController::AMyPlayerController()
+{
+    InteractionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComponent"));
+    InteractionComponent->TraceDistance = 500.0f;
+    InteractionComponent->bUseSphereTrace = true;
+    InteractionComponent->SphereTraceRadius = 20.0f;
+}
+```
+
+---
+
+## **Best Practices**
+
+- **Use sphere traces** over pure line traces for friendlier targeting.
+- Always **show clear prompts** (“Press E to Pick Up”, “Hold E to Harvest”).
+- Enforce **range and line-of-sight** to avoid weird interactions.
+- Use **hold interactions** for harvesting and longer actions.
+- Add **animations** and **progress bars** for good feedback.
+- Make all important interactions **server RPCs**.
+- Use **tool requirements** to gate advanced resources (pickaxe, axe, etc.).
+- Test at different FOVs and distances to ensure comfortable interaction.

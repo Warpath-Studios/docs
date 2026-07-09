@@ -1,0 +1,316 @@
+---
+title: "Blueprint Integration"
+description: "This page walks you through using the Respawn Manager entirely in Blueprint, including:"
+---
+
+This page walks you through using the Respawn Manager **entirely in Blueprint**, including:
+
+- Accessing the subsystem
+- Registering respawn requests
+- Implementing respawn callbacks
+- Using the Respawnable interface
+- Making resource nodes, foliage, or world objects fully respawnable
+
+Blueprint support is first-class, and no C++ is required to use the system.
+
+---
+
+# **1. Getting the Respawn Manager (Blueprint)**
+
+Because it’s a **World Subsystem**, you can get it from any Blueprint:
+
+### **Node Path:**
+
+```
+Get Game Instance
+    ↓
+Get World
+        ↓
+Get Subsystem → RespawnManagerSubsystem
+```
+
+### **Simplest Node Setup**
+
+```
+Get Game Instance
+   → Get World
+      → Get Subsystem (RespawnManagerSubsystem)
+```
+
+Save the reference if you need it multiple times.
+
+---
+
+# **2. Registering a Respawn Request (Blueprint)**
+
+When an actor is harvested, used, or destroyed visually, register its respawn:
+
+### **Node Example:**
+
+```
+Get RespawnManagerSubsystem
+     ↓
+Register Respawn Request
+     Target Actor = Self
+     Delay        = Respawn Time (float)
+```
+
+### **Typical Setup**
+
+```
+Event OnHarvested (custom or interface)
+   ↓
+Set bHasBeenHarvested = true
+Hide Mesh
+Disable Collision
+Disable Interaction
+   ↓
+Get Respawn Manager
+   ↓
+Register Respawn Request (Self, RespawnTime)
+```
+
+This immediately schedules the respawn event.  
+The actor itself no longer tracks time.
+
+---
+
+# **3. Implementing Respawn Callbacks**
+
+When the delay expires, the Respawn Manager calls back into the actor.
+
+This depends on whether you use the interface or a direct function:
+
+---
+
+## **Option A — Using the Respawnable Interface (Recommended)**
+
+### **Add the Interface**
+
+1. Open your Blueprint (e.g., BP\_Tree, BP\_Rock, BP\_Chest)
+2. Class Settings → Interfaces
+3. Add:  
+   `BPI_Respawnable`
+
+This will expose:
+
+### **Event: OnRespawnRequested**
+
+This is what the Respawn Manager calls when the actor should respawn.
+
+### **Example Implementation**
+
+```
+Event OnRespawnRequested
+   ↓
+Set bHasBeenHarvested = false
+LootComponent → Reset Loot (if applicable)
+Show Mesh
+Enable Collision
+Re-enable Interaction
+```
+
+Keep it simple and idempotent.
+
+---
+
+## **Option B — Direct Function Call (No Interface)**
+
+If your actor has a custom function, e.g.:
+
+```
+Respawn()
+```
+
+You can configure the Respawn Manager to call this function instead.
+
+Use this only if you have simple internal projects.  
+The interface method is cleaner for plugins.
+
+---
+
+# **4. Full Blueprint Pattern for Resource Nodes**
+
+Below is the **canonical pattern** for respawnable resource nodes:
+
+---
+
+## **Step 1 — Handle Harvesting**
+
+```
+Event OnHarvested
+   ↓
+Branch: bHasBeenHarvested?
+      True → Return
+      False →
+            Set bHasBeenHarvested = true
+            Hide Mesh
+            Disable Collision
+            Disable Interaction
+            ↓
+            Get Respawn Manager
+                ↓
+                Register Respawn Request
+                   Target Actor = Self
+                   Delay = RespawnTime
+```
+
+---
+
+## **Step 2 — Implement Respawn Callback**
+
+```
+Event OnRespawnRequested
+   ↓
+Set bHasBeenHarvested = false
+LootComponent → Reset Loot
+Show Mesh
+Enable Collision
+Enable Interaction
+```
+
+This ensures all resource nodes behave identically across your entire game.
+
+---
+
+# **5. Using Respawn Manager with LootComponent (Blueprint)**
+
+If your actor includes a `LootComponent`:
+
+### On harvest:
+
+```
+LootComponent → Generate Loot
+   ↓
+Give items to player / spawn world items
+   ↓
+Hide mesh
+Disable collision
+Register Respawn Request
+```
+
+### On respawn:
+
+```
+LootComponent → Reset Loot
+Show mesh
+Enable collision
+```
+
+This gives you renewable resources for:
+
+- Trees
+- Rocks
+- Ore veins
+- Plant clusters
+- Beehives
+- Mushrooms
+- Bushes
+- ANY harvestable spot
+
+---
+
+# **6. Using Respawn Manager with Foliage System (Blueprint)**
+
+For actors converted from foliage instances (via your FoliageInteractionManager pattern):
+
+### On harvest:
+
+```
+Hide Actor
+Register Respawn Request
+```
+
+### On respawn:
+
+```
+Restore Actor’s instance transform
+Make visible again
+Re-add to interaction radius system (if needed)
+```
+
+The Respawn Manager handles the timing; the foliage system handles visibility and interaction radius.
+
+---
+
+# **7. Handling Custom Respawn Logic**
+
+The callback event (`OnRespawnRequested`) can perform anything you need:
+
+- Reset health
+- Reset crafting station fuel
+- Reset puzzle state
+- Refill water wells
+- Re-arm traps
+- Regenerate dungeon loot
+- Switch meshes/materials
+- Trigger an animation of regrowth
+
+Because the subsystem just calls the event, you can do anything internally.
+
+---
+
+# **8. Adding Debug Support (Optional)**
+
+For debugging respawn behavior:
+
+### Add a text render actor:
+
+```
+"RESPAWN IN: Xs"
+```
+
+### Or add a print:
+
+```
+Print String: "Respawn requested on {ActorName}"
+```
+
+### Or track state:
+
+```
+bDebug_Respawn = true
+```
+
+These are optional, but extremely helpful while tuning respawn times.
+
+---
+
+# **9. Blueprint Best Practices**
+
+| Practice | Why |
+| --- | --- |
+| Use the Respawnable interface | Cleanest API, plugin-friendly |
+| Always disable collision when inactive | Prevents invisible obstacles |
+| Hide mesh only when needed | Helps debugging |
+| Keep callbacks lightweight | Thread-safe and scalable |
+| Restore loot inside callback | Guarantees fresh rolls |
+| Test with multiple clients | Confirm correct replication |
+| Add a variable: `RespawnTime` | Lets designers tune each node |
+
+---
+
+# **10. Example: Entire Node Flow In One Diagram**
+
+```
+[Event OnHarvested]
+       ↓
+Generate Loot (optional)
+       ↓
+Hide Mesh
+Disable Collision
+Set bHasBeenHarvested = true
+       ↓
+[Get Respawn Manager]
+       ↓
+Register Respawn Request (Self, RespawnTime)
+-------------------------------------------------
+After Delay…
+-------------------------------------------------
+[Event OnRespawnRequested]
+       ↓
+Reset Loot (if loot component exists)
+Show Mesh
+Enable Collision
+Set bHasBeenHarvested = false
+```

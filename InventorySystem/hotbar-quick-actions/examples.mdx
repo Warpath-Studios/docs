@@ -1,0 +1,172 @@
+---
+title: "Examples"
+description: "These are examples, not built-in rules."
+---
+
+## Common Design Patterns (Examples)
+
+> These are **examples**, not built-in rules.  
+> You can implement them using item tags, custom booleans on `UItemDataAsset`, or your own logic.
+
+---
+
+### Potion Belt (Slots 0–2, Consumables Only)
+
+Blueprint Pattern
+
+In your UI or character Blueprint, when assigning to the hotbar:
+
+```
+Assign Potion To Hotbar (Custom Event)
+   Inputs:
+      Item Instance
+      Target Slot
+
+Branch: Target Slot ≤ 2 ?
+   True:
+      → Check: Item Has Tag "Item.Category.Consumable"
+         True:
+            HotbarComponent → Assign Item To Slot
+               Item Instance = Item
+               Slot Index    = Target Slot
+         False:
+            Show Notification: "Only consumables allowed in potion belt"
+   False:
+      → (Handle as normal hotbar slot)
+```
+
+Key nodes you’d use:
+
+- `Has Matching Gameplay Tag` (or your own “Is Consumable” flag)
+- `Assign Item To Slot`
+- `Print String` / `Show Notification` widget
+
+C++ Example
+
+```
+void AMyCharacter::AssignPotion(const FItemInstance& Potion, int32 PotionSlot)
+{
+    if (PotionSlot >= 0 && PotionSlot < 3)
+    {
+        if (Potion.ItemData && Potion.ItemData->bIsConsumable)
+        {
+            HotbarComponent->AssignItemToSlot(Potion, PotionSlot);
+        }
+        else
+        {
+            ShowNotification(TEXT("Only consumables allowed in potion belt"));
+        }
+    }
+    else
+    {
+        // Handle normal hotbar behavior
+        HotbarComponent->AssignItemToSlot(Potion, PotionSlot);
+    }
+}
+```
+
+---
+
+### Weapon Loadout (Slots 3–5, Weapons Only)
+
+Blueprint Pattern
+
+```
+Assign Weapon To Hotbar (Custom Event)
+   Inputs:
+      Item Instance
+      Target Slot
+
+Branch: Target Slot in [3..5] ?
+   True:
+      → Check: Item Has Tag "Item.Category.Weapon"
+         True:
+            Assign Item To Slot (HotbarComponent)
+         False:
+            Show Notification: "Only weapons allowed in weapon slots"
+   False:
+      → Assign Item To Slot (normal behavior)
+```
+
+Again, you can use either:
+
+- A Gameplay Tag like `Item.Category.Weapon`
+- Or a bool like `bIsWeapon` on the Item Data Asset exposed to Blueprint
+
+C++ Example
+
+```
+void AMyCharacter::AssignWeapon(const FItemInstance& Weapon, int32 WeaponSlot)
+{
+    if (WeaponSlot >= 3 && WeaponSlot < 6)
+    {
+        if (Weapon.ItemData && Weapon.ItemData->bIsWeapon)
+        {
+            HotbarComponent->AssignItemToSlot(Weapon, WeaponSlot);
+        }
+        else
+        {
+            ShowNotification(TEXT("Only weapons allowed in weapon slots"));
+        }
+    }
+    else
+    {
+        HotbarComponent->AssignItemToSlot(Weapon, WeaponSlot);
+    }
+}
+```
+
+---
+
+### Quick Heal (Use First Health Potion in Hotbar)
+
+Blueprint Pattern
+
+Create a custom event on your character, e.g. `Quick Heal`:
+
+```
+Quick Heal (Custom Event)
+   ↓
+For Loop
+   First Index = 0
+   Last Index  = MaxSlots-1
+   Loop Body:
+      Get Item At Index (HotbarComponent)
+         Slot Index = Loop Index
+         ↓
+      Branch: Is Item Empty?
+         True:
+            → Continue Loop
+         False:
+            → Branch: ItemID == "HealthPotion" ?
+               True:
+                  Use Hotbar Slot (HotbarComponent)
+                     Slot Index = Loop Index
+                  Break Loop
+               False:
+                  Continue Loop
+Completed:
+   If no potion used → Show Notification "No health potions in hotbar"
+```
+
+You can track “found one” with a bool set in the loop or with a local variable.
+
+C++ Example
+
+```
+void AMyCharacter::QuickHeal()
+{
+    const int32 MaxSlots = HotbarComponent->MaxSlots;
+    for (int32 i = 0; i < MaxSlots; ++i)
+    {
+        FItemInstance Item = HotbarComponent->GetItemAtIndex(i);
+        if (!Item.IsEmpty() && Item.ItemID == "HealthPotion")
+        {
+            HotbarComponent->UseHotbarSlot(i);
+            return;
+        }
+    }
+
+    ShowNotification(TEXT("No health potions in hotbar"));
+}
+```

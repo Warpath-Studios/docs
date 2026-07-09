@@ -1,0 +1,52 @@
+---
+title: "Saving"
+description: "Trigger a save manually:"
+---
+
+### **Manual Save**
+
+Trigger a save manually:
+
+**Blueprint**:
+
+```
+[Get Save Subsystem]
+   ↓
+[Flush Saves]
+```
+
+**C++**:
+
+```
+USaveSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<USaveSubsystem>();
+SaveSubsystem->FlushSaves();
+```
+
+### **Autosave**
+
+Configure automatic saves:
+
+```
+SaveSubsystem->UpdateAutosaveInterval(300.0f);  // Save every 5 minutes
+```
+
+**Default**: 300 seconds (5 minutes)
+
+### **Mark Dirty**
+
+When data changes, mark as needing save:
+
+**C++**:
+
+```
+void UInventoryComponent::AddItem(UItemDataAsset* ItemData, int32 Quantity)
+{
+    // ... add item logic ...
+
+    // Mark for save
+    USaveSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<USaveSubsystem>();
+    SaveSubsystem->MarkDirty(this);
+}
+```
+
+**Note**: Most UMI components automatically mark themselves dirty on changes.

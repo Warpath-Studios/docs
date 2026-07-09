@@ -1,0 +1,39 @@
+---
+title: "Integration with Gameplay Abilities"
+description: "Items can trigger abilities when equipped:"
+---
+
+### **Equip Abilities**
+
+Items can trigger abilities when equipped:
+
+**In ItemDataAsset**:
+
+```
+Equip Ability: GA_EquipSword
+Unequip Ability: GA_UnequipSword
+```
+
+**When item is equipped**:
+
+1. `EquipAbility` is activated
+2. Ability can play animations, apply effects, etc.
+
+**When item is unequipped**:
+
+1. `UnequipAbility` is activated
+2. Cleanup logic runs
+
+### **Passive Abilities**
+
+Items can grant passive abilities while equipped:
+
+**In ItemDataAsset**:
+
+```
+Passive Ability: GA_SwordMastery
+Remove Ability: GA_SwordMastery
+```
+
+- `PassiveAbility`: Granted when equipped
+- `RemoveAbility`: Removed when unequipped

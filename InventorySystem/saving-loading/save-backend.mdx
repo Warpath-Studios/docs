@@ -1,0 +1,40 @@
+---
+title: "Save Backend"
+description: "By default, UMI uses which saves to disk:"
+---
+
+### **Default Backend**
+
+By default, UMI uses `SaveBackend_File` which saves to disk:
+
+```
+ProjectDir/Saved/SaveGames/
+├── SaveSlot_001/
+│   ├── Players/
+│   │   ├── player_guid_1.sav
+│   │   └── player_guid_2.sav
+│   └── World_Containers/
+│       ├── container_guid_1.sav
+│       └── container_guid_2.sav
+```
+
+### **Custom Backend**
+
+Implement `ISaveBackend` for custom storage:
+
+```
+class ISaveBackend
+{
+public:
+    virtual bool SaveRecord(const FString& Bucket, const FGuid& Guid, const FSaveRecord& Record) = 0;
+    virtual FSaveRecord LoadRecord(const FString& Bucket, const FGuid& Guid) = 0;
+    virtual bool DeleteRecord(const FString& Bucket, const FGuid& Guid) = 0;
+};
+```
+
+**Example Use Cases**:
+
+- Cloud saves (Steam, Epic, Console)
+- Database storage
+- Encrypted saves
+- Compressed saves

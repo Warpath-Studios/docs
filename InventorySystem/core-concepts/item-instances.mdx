@@ -1,0 +1,152 @@
+---
+title: "Item Instances"
+description: "While defines the type of item, represents a specific instance of that item with unique properties."
+---
+
+While `ItemDataAsset` defines the **type** of item, `FItemInstance` represents a **specific instance** of that item with unique properties.
+
+**Location**: `/Public/Inventory/Structures/ItemInstance.h`
+
+### **The Difference**
+
+Think of it like this:
+
+- **ItemDataAsset** = "The concept of an Iron Sword"
+- **FItemInstance** = "Bob's Iron Sword with 75% durability that he crafted on Tuesday"
+
+### **FItemInstance Structure**
+
+```
+FName ItemID;                              // Which item type
+int32 Quantity;                            // Stack size
+UItemDataAsset* ItemData;                  // Reference to definition
+FGameplayTag RarityTag;                    // Instance rarity
+TArray<FStatModifier> StatModifiers;       // Custom stats
+FText CrafterName;                         // Who crafted this
+TArray<FItemModSlot> Infusions;            // Mods/enchantments
+float Durability;                          // Current durability
+FDateTime CreationTime;                    // When created
+FGuid UniqueID;                            // Globally unique ID
+FName OwnerID;                             // Ownership tracking
+```
+
+### **Key Properties Explained**
+
+**ItemID & ItemData**
+
+- **ItemID**: Quick reference to item type
+- **ItemData**: Full reference to the ItemDataAsset
+- Both are kept for performance (ID is faster to check, Data has all info)
+
+**Quantity**
+
+- How many items in this stack
+- Must be ≤ ItemData's MaxStackSize
+- Used for commodities, ammo, resources
+
+**Rarity Tag**
+
+- Can override the ItemDataAsset's default rarity
+- Allows the same sword to drop as Common or Epic
+- Used by loot system for random quality
+
+**Stat Modifiers**
+
+- Additional stats beyond the base item
+- Can be additive, multiplicative, or override
+- Example: `+5 Attack` on top of sword's base 10 attack
+
+```
+FStatModifier ExtraDamage;
+ExtraDamage.StatTag = "Stat.Attack";
+ExtraDamage.ModifierType = EStatModifierTypes::Additive;
+ExtraDamage.Value = 5.0f;
+```
+
+**Crafter Name**
+
+- Displays who crafted the item
+- "Crafted by Thorin"
+- Used for provenance-based stacking
+
+**Infusions**
+
+- Applied mods/enchantments
+- Fire damage, frost effect, etc.
+- Each has a power level
+
+```
+FItemModSlot FireMod;
+FireMod.SlotTag = "Mod.Element.Fire";
+FireMod.ModID = "BurningBrand";
+FireMod.ModPower = 1.5f;
+FireMod.DisplayName = FText::FromString("Flame Brand");
+```
+
+**Durability**
+
+- Current durability value (0.0 to MaxDurability)
+- Used for equipment wear and tear
+- Affects item stacking with durability-based policies
+
+**Creation Time**
+
+- When this item was created
+- Used for decay system
+- Freshness for food items
+
+**Unique ID**
+
+- Globally unique identifier (GUID)
+- Used for save/load
+- Tracks specific item instances across sessions
+
+**Owner ID**
+
+- Tracks who owns this item
+- Used for loot rights
+- Prevents item theft in multiplayer
+
+### **Common Operations**
+
+**Check if Empty**
+
+```
+if (ItemInstance.IsEmpty())
+{
+    // No item in this slot
+}
+```
+
+**Check Stacking Compatibility**
+
+```
+if (ItemInstance.IsStackableWith(OtherInstance))
+{
+    // Can merge these stacks
+}
+```
+
+**Get Max Durability**
+
+```
+float MaxDurability = ItemInstance.GetMaxDurability();
+```
+
+**Serialization**
+
+```
+// Save
+FItemRecord Record = ItemInstance.ToRecord();
+
+// Load
+FItemInstance LoadedInstance = FItemInstance::FromRecord(Record);
+```
+
+### **When Are Item Instances Created?**
+
+1. **Picking up items**: WorldItemActor creates instance
+2. **Loot drops**: LootComponent generates instances
+3. **Crafting**: CraftingComponent creates new instance
+4. **Quest rewards**: Manually created in code/Blueprint
+5. **Admin commands**: Debug/testing tools

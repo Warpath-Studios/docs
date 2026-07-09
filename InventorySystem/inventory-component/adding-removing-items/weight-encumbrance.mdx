@@ -1,0 +1,111 @@
+---
+title: "Weight / Encumbrance"
+description: "UMI supports weight-based inventory limits."
+---
+
+UMI supports weight-based inventory limits. Each item has a weight, and the total cannot exceed the max weight.
+
+### **Configuration**
+
+```
+Max Weight: 100.0    // Maximum kg capacity (0 = unlimited)
+```
+
+**0 = Unlimited Weight** (disable weight system)
+
+### **Weight Calculation**
+
+Total weight is calculated as:
+
+```
+Total Weight = Σ (Item Weight × Quantity)
+```
+
+Example:
+
+- Iron Sword (Weight: 3.5 kg) × 1 = 3.5 kg
+- Health Potion (Weight: 0.2 kg) × 10 = 2.0 kg
+- Gold Ore (Weight: 1.0 kg) × 20 = 20.0 kg
+- **Total**: 25.5 kg
+
+### **Weight Queries**
+
+**Get Current Weight**
+
+**Blueprint**:
+
+```
+[InventoryComponent] → GetCurrentWeight
+   Return: 25.5
+```
+
+**C++**:
+
+```
+float CurrentWeight = InventoryComponent->GetCurrentWeight();
+```
+
+**Get Remaining Weight**
+
+**Blueprint**:
+
+```
+[InventoryComponent] → GetRemainingWeight
+   Return: 74.5  // (100.0 - 25.5)
+```
+
+**C++**:
+
+```
+float Remaining = InventoryComponent->GetRemainingWeight();
+```
+
+**Check if Item Can Be Added by Weight**
+
+```
+bool bCanAdd = InventoryComponent->CanAddItemWeight(ItemDataAsset, Quantity);
+if (!bCanAdd)
+{
+    // Show "Too Heavy" message
+}
+```
+
+### **Weight Display**
+
+UMI provides color-coded weight status:
+
+**Blueprint Helper**:
+
+```
+[InventoryComponent] → GetWeightDisplayColor
+   Return: Green (< 80%)
+   Return: Yellow (80-99%)
+   Return: Red (100%+)
+```
+
+Use this in your UI to show encumbrance:
+
+```
+Weight: 85.5 / 100.0 kg  [Yellow warning color]
+```
+
+### **Over-Encumbrance**
+
+When `CurrentWeight > MaxWeight`:
+
+- **Adding items will fail**
+- Player cannot pick up more items
+- You can implement movement speed penalties in your character class
+
+**Example Movement Penalty**:
+
+```
+// In your Character class
+float WeightPercent = InventoryComponent->GetCurrentWeight() / InventoryComponent->MaxWeight;
+if (WeightPercent > 1.0f)
+{
+    // 50% speed at 100% weight, 25% speed at 150% weight, etc.
+    float SpeedMultiplier = FMath::Clamp(1.0f / WeightPercent, 0.25f, 1.0f);
+    GetCharacterMovement()->MaxWalkSpeed = BaseSpeed * SpeedMultiplier;
+}
+```

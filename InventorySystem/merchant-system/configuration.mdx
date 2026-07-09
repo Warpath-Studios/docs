@@ -1,0 +1,69 @@
+---
+title: "Configuration"
+description: "Complete vendor behavior configuration."
+---
+
+### **FMerchantConfig**
+
+Complete vendor behavior configuration.
+
+```
+USTRUCT(BlueprintType)
+struct FMerchantConfig
+{
+    // Stock Management
+    bool bHasStock = true;                      // Finite vs infinite stock
+
+    // Buying Behavior
+    bool bBuysAnything = false;                 // Accepts all items
+    bool bHasBuyList = false;                   // Uses whitelist
+
+    // Replenishment
+    bool bReplenishOnBuyback = true;            // Sold items restock merchant
+
+    // Pricing
+    float MarketFeePercent = 0.0f;              // Transaction fee (0-100%)
+    float BuybackPercent = 50.0f;               // Buy price % of base value
+
+    // Currency
+    UItemDataAsset* AcceptedCurrency;           // Currency item (e.g., Gold)
+
+    // Interaction
+    float MaxInteractionDistance = 300.0f;      // Max distance in units
+    float QuoteExpirationSeconds = 30.0f;       // Quote validity duration
+};
+```
+
+### **FStockItem**
+
+Individual item configuration in merchant's inventory.
+
+```
+USTRUCT(BlueprintType)
+struct FStockItem
+{
+    UItemDataAsset* ItemData;                   // Item reference
+    int32 MaxStock = 100;                       // Maximum quantity
+    int32 CurrentStock = 100;                   // Current available
+
+    // Pricing Overrides
+    float UnitPriceOverride = -1.0f;            // Custom sell price (-1 = use item's base)
+    float BuyPriceOverridePercent = -1.0f;      // Custom buyback % (-1 = use vendor default)
+
+    // Replenishment
+    EReplenishMode ReplenishMode = UseVendorDefault;
+};
+```
+
+### **EReplenishMode**
+
+Controls how sold items affect stock.
+
+```
+enum class EReplenishMode : uint8
+{
+    UseVendorDefault,    // Follow Config.bReplenishOnBuyback
+    AlwaysReplenish,     // Always add sold items to stock
+    NeverReplenish       // Act as item sink (good for trash/recycler NPCs)
+};
+```

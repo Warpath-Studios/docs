@@ -1,0 +1,82 @@
+---
+title: "Assigning Items"
+description: "Typical flow when dragging from inventory to hotbar:"
+---
+
+### From Inventory (Blueprint)
+
+Typical flow when dragging from inventory to hotbar:
+
+```
+(Get Item At Index on InventoryComponent)
+   ↓
+Assign Item To Slot on HotbarComponent
+   Item Instance = [Inventory item]
+   Slot Index    = [Target hotbar index]
+   Return        = Success? (bool)
+```
+
+Node:  
+`HotbarComponent → Assign Item To Slot`
+
+### From Inventory (C++)
+
+```
+FItemInstance Item = InventoryComponent->GetItemAtIndex(InventorySlot);
+bool bSuccess = HotbarComponent->AssignItemToSlot(Item, HotbarSlot);
+```
+
+---
+
+### Direct Assignment / Programmatic (Blueprint)
+
+```
+Make Item Instance
+   ItemID   = "HealthPotion"
+   Quantity = 5
+   ItemData = DA_HealthPotion
+   ↓
+Assign Item To Slot
+   Slot Index = 1
+```
+
+### Direct Assignment / Programmatic (C++)
+
+```
+FItemInstance HealthPotion;
+HealthPotion.ItemID  = "HealthPotion";
+HealthPotion.ItemData = HealthPotionAsset;
+HealthPotion.Quantity = 5;
+
+HotbarComponent->AssignItemToSlot(HealthPotion, 1);
+```
+
+---
+
+### Clearing Slots
+
+Blueprint
+
+- **Clear but keep sticky memory (for auto-refill):**
+
+```
+Clear Slot But Keep Sticky
+   Slot Index = X
+```
+
+- **Clear completely (including sticky ID):**
+
+```
+Clear Slot And Sticky
+   Slot Index = X
+```
+
+C++
+
+```
+// Clear but remember sticky ID
+HotbarComponent->ClearSlotButKeepSticky(SlotIndex);
+
+// Clear completely
+HotbarComponent->ClearSlotAndSticky(SlotIndex);
+```

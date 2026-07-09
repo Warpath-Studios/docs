@@ -1,0 +1,129 @@
+---
+title: "Respawn Manager Integration"
+description: "UMI’s Loot System can optionally integrate with the Respawn Manager to support respawnable loot sources, such as:"
+---
+
+UMI’s Loot System can optionally integrate with the **Respawn Manager** to support **respawnable loot sources**, such as:
+
+- Resource nodes (trees, rocks, ore veins)
+- World chests that refill over time
+- Enemy containers or destructibles that respawn
+- Any loot-bearing actor that reappears after a delay
+
+This is **not required** to use the Loot System, but it provides a clean and consistent way to handle timed resets.
+
+---
+
+## **Basic Pattern: Register Respawn Request**
+
+Whenever a loot source is harvested or opened:
+
+1. Generate loot
+2. Mark the actor as depleted
+3. Hide/disable interaction
+4. Register the actor with the Respawn Manager
+
+### Blueprint Example
+
+```
+Event OnLootCollected
+   ↓
+Set bHasBeenLooted = true
+LootComponent → Generate Loot
+Disable interaction
+Hide chest / resource mesh
+   ↓
+Get RespawnManagerSubsystem
+   → Register Respawn Request
+        Target Actor = Self
+        Delay        = RespawnTime
+```
+
+### C++ Example
+
+```
+void ALootActor::OnLootCollected(APlayerController* Player)
+{
+    if (bHasBeenLooted) return;
+    bHasBeenLooted = true;
+
+    // Generate loot
+    FLootResult Result = LootComponent->GenerateLoot();
+    GiveLootToPlayer(Player, Result);
+
+    // Hide or disable actor
+    Mesh->SetVisibility(false);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    // Register respawn request
+    if (URespawnManagerSubsystem* RM = GetWorld()->GetSubsystem<URespawnManagerSubsystem>())
+    {
+        RM->RegisterRespawnRequest(this, RespawnTime);
+    }
+}
+```
+
+---
+
+## **On Respawn (Blueprint or C++)**
+
+Actors using Respawn Manager should implement `BPI_Respawnable` (BP) or `IRespawnable` (C++).
+
+### Blueprint
+
+```
+Event OnRespawnRequested
+   ↓
+Set bHasBeenLooted = false
+LootComponent → Reset Loot
+Show mesh
+Enable collision
+Enable interaction
+```
+
+### C++ (interface implementation)
+
+```
+void ALootActor::OnRespawnRequested()
+{
+    bHasBeenLooted = false;
+
+    if (LootComponent)
+        LootComponent->ResetLoot();
+
+    Mesh->SetVisibility(true);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+```
+
+---
+
+## **Recommended Use Cases**
+
+Use Respawn Manager with loot when you need:
+
+### ✔ Respawning World Loot
+
+Examples: berry bushes, mushrooms, herbs, mineral nodes.
+
+### ✔ Refillable Chests / Supply Caches
+
+Chests that regenerate loot after X minutes/hours.
+
+### ✔ Dungeons / Camps / Static Sites
+
+Simple timed resets without building full encounter logic.
+
+### ✔ Farming Gameplay
+
+Resource loops where players gather materials from renewable nodes.
+
+---
+
+## **Where to Learn More**
+
+This section only covers the **minimal integration needed** for loot sources.
+
+For budgeting, region-based respawns, foliage integration, save/load, or performance tuning, see the main:
+
+> [**Respawn Manager**](/warpath-studios/umf/respawn-manager-4gzkfg4sia-u5drekl5ux2c) section

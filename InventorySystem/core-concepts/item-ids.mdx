@@ -1,0 +1,31 @@
+---
+title: "Item IDs"
+description: "Every item in UMI is identified by a unique Item ID ()."
+---
+
+### **What Are Item IDs?**
+
+Every item in UMI is identified by a unique **Item ID** (`FName`). This is the primary key used throughout the system to reference item types.
+
+```
+FName ItemID = "HealthPotion";
+FName ItemID = "IronSword";
+FName ItemID = "WoodLog";
+```
+
+### **Best Practices**
+
+- **Use descriptive names**: `IronSword` not `Sword1`
+- **Be consistent with naming**: Use PascalCase or snake\_case consistently
+- **Avoid spaces**: Use `HealthPotion` not `Health Potion`
+- **Keep them unique**: No two items should share the same ID
+- **Plan for localization**: Item IDs are not shown to players (use DisplayName for that)
+
+### **Where Item IDs Are Used**
+
+- **ItemDataAsset**: Defines the item type
+- **FItemInstance**: References which item type this instance is
+- **Crafting recipes**: Specifies ingredients and outputs
+- **Loot tables**: Defines what can drop
+- **Container restrictions**: Whitelist/blacklist specific items
+- **Save system**: Persists item references

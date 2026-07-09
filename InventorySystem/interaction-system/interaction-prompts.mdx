@@ -1,0 +1,83 @@
+---
+title: "Interaction Prompts"
+description: "defines what actions an actor exposes to the interaction system:"
+---
+
+### Interaction Options
+
+`FInteractionOption` defines what actions an actor exposes to the interaction system:
+
+```
+struct FInteractionOption
+{
+    FGameplayTag Tag;                       // e.g. Interaction.Pickup
+    TSubclassOf<UGameplayAbility> Action;   // optional GAS ability
+    float Range;                            // max distance
+    bool bRequiresLineOfSight;              // LOS check
+    FText PromptText;                       // UI text
+    float HoldDuration;                     // 0 = instant
+    TArray<FGameplayTag> RequiredTools;     // tool tags
+};
+```
+
+Example on a World Item (Blueprint)
+
+```
+Interaction Options:
+   [0]:
+      Tag: Interaction.Pickup
+      Action: None (or GA_PickupItem)
+      Range: 300
+      Requires Line Of Sight: true
+      Prompt Text: "Press E to Pick Up"
+      Hold Duration: 0
+      Required Tools: []
+```
+
+---
+
+### Displaying Prompts in UI
+
+Blueprint (Widget Flow)
+
+```
+Tick (or timer)
+   ↓
+InteractionComponent → Get Focused Actor
+   ↓
+Branch: IsValid?
+   No  → Hide prompt
+   Yes →
+      If actor implements interaction options:
+          Get Interaction Options
+          Build prompt text (e.g. "Press E to Pick Up {ItemName} x{Quantity}")
+          Show prompt
+```
+
+C++ Example (Prompt Widget)
+
+```
+void UInteractionWidget::UpdatePrompt()
+{
+    AActor* FocusedActor = InteractionComponent->GetFocusedActor();
+
+    if (AWorldItemActor* WorldItem = Cast<AWorldItemActor>(FocusedActor))
+    {
+        FText ItemName = WorldItem->ItemInstance.ItemData->DisplayName;
+        int32 Quantity = WorldItem->ItemInstance.Quantity;
+
+        FText PromptText = FText::Format(
+            LOCTEXT("PickupPrompt", "Press E to Pick Up {0} x{1}"),
+            ItemName,
+            Quantity
+        );
+
+        PromptTextBlock->SetText(PromptText);
+        PromptTextBlock->SetVisibility(ESlateVisibility::Visible);
+    }
+    else
+    {
+        PromptTextBlock->SetVisibility(ESlateVisibility::Hidden);
+    }
+}
+```

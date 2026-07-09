@@ -1,0 +1,299 @@
+---
+title: "Core Concepts"
+description: "The Respawn Manager uses a clean, universal model for handling actor respawns across the entire framework."
+---
+
+The Respawn Manager uses a clean, universal model for handling actor respawns across the entire framework. This page explains the core ideas behind the subsystem so you understand exactly how it works and how your actors fit into the lifecycle.
+
+These concepts apply to:
+
+- Resource nodes (trees, rocks, ore veins)
+- Harvestable foliage
+- Loot containers
+- Enemy corpses
+- World interactables and destructibles
+- ANY actor that needs timed regeneration
+
+The goal is to establish one consistent pattern that all UM… plugins can rely on.
+
+---
+
+# **1. The Respawnable Actor Lifecycle**
+
+Every respawnable actor follows the same 5-step lifecycle:
+
+```
+1. Actor becomes inactive (harvested / destroyed / used)
+2. Actor registers a respawn request (Delay)
+3. Respawn Manager counts down asynchronously
+4. Respawn Manager triggers the respawn callback
+5. Actor resets state and becomes active again
+```
+
+### Why this model?
+
+- Keeps actors extremely lightweight
+- Ensures consistent behavior across systems
+- Makes the system world-scale safe (thousands of nodes)
+- Cleanly supports multiplayer and save/load
+- Avoids timer duplication or ticking actors that don’t need ticking
+
+---
+
+# **2. Manager-Driven Logic (NOT Actor-Driven)**
+
+Traditional UE actors often set up their own timers:
+
+```
+GetWorld()->GetTimerManager().SetTimer(…);
+```
+
+This does **not scale** in large worlds.
+
+The Respawn Manager flips the pattern:
+
+### ❌ Actor manages its own timer
+
+### ✔️ Manager manages *all* respawn timers
+
+This:
+
+- Eliminates per-actor timers
+- Reduces ticking actors
+- Centralizes logic for performance
+- Integrates with save/load more cleanly
+- Makes respawn behavior predictable and configurable
+
+Actors become “dumb” in the best way possible.
+
+---
+
+# **3. Registration → Delay → Callback Pattern**
+
+Every respawnable object interacts with the manager in the same way:
+
+### **1. Register**
+
+Actor signals the manager that it must be respawned.
+
+```
+RegisterRespawnRequest(Self, RespawnTime)
+```
+
+### **2. Wait**
+
+The manager handles:
+
+- Time remaining
+- Persistence
+- Level streaming cases
+- Actor validity
+- Tick budgeting
+
+### **3. Callback**
+
+When time expires:
+
+```
+OnRespawnRequested()
+```
+
+(or via interface)
+
+The actor implements that function to restore itself.
+
+---
+
+# **4. Decoupling via Interface (Recommended)**
+
+The Respawn Manager does **not** need to know about specific actor classes.
+
+Instead, actors implement a respawn interface such as:
+
+### **C++ Interface Example**
+
+```
+UINTERFACE(Blueprintable)
+class URespawnable : public UInterface { GENERATED_BODY() };
+
+class IRespawnable
+{
+    GENERATED_BODY()
+
+public:
+    UFUNCTION(BlueprintNativeEvent)
+    void OnRespawnRequested();
+
+    UFUNCTION(BlueprintNativeEvent)
+    float GetRespawnDelay() const;
+};
+```
+
+### **Benefits**
+
+- Subsystem never touches concrete actor types
+- Perfect for modular plugins
+- Allows custom per-actor delay logic
+- Full Blueprint support
+- Clean integration with different systems (Loot, Foliage, Crafting, etc.)
+
+---
+
+# **5. Weak Object Tracking**
+
+The Respawn Manager stores **WeakObjectPtrs** for all registered respawnables.
+
+This ensures:
+
+- Actors that get destroyed fully (e.g., unloaded level, forced GC)  
+  → are automatically removed from the queue
+- No invalid pointer access
+- No ticking of destroyed actors
+- Safe behavior in multiplayer worlds with frequent destruction/spawn cycles
+
+WeakObjectPtr is essential for stability.
+
+---
+
+# **6. Time Budgeting & Performance**
+
+The Respawn Manager is intentionally designed to support **thousands** of respawnable objects.
+
+Common optimizations you can expect or implement:
+
+### ✔️ Tick Budgeting
+
+Process only X respawn entries per frame based on configuration.
+
+### ✔️ Batched Respawn Checks
+
+Instead of checking every entry every tick, entries are grouped by next-expiry timestamps.
+
+### ✔️ Auto-Pruning
+
+Invalid object references are removed automatically.
+
+### ✔️ Region-Based Respawn (optional advanced use)
+
+You may organize respawnables by zones/regions to avoid burst respawns.
+
+---
+
+# **7. Multiplayer Considerations**
+
+The Respawn Manager follows the same authority rules as other UMI/UMF systems:
+
+### **Server authoritative**
+
+- Only the **server** schedules respawns
+- Only the **server** triggers callbacks
+- Clients never run respawn timers
+
+### **Clients only see visual result**
+
+The respawn (mesh reappearance, collision re-enable, etc.) is replicated through the usual UE replication paths.
+
+This ensures:
+
+- No cheating (clients can’t force respawn)
+- No desync (everyone sees the same regeneration)
+- Minimal bandwidth
+
+---
+
+# **8. Save System Integration**
+
+The respawn manager pairs cleanly with the UMI Save System.
+
+At save time, the subsystem can store:
+
+- Each pending respawnable actor’s GUID or unique ID
+- Remaining time until respawn
+- Optional category/group info
+
+At load:
+
+- Only remaining delay is restored
+- Invalid/missing objects are pruned automatically
+- Callback scheduling resumes seamlessly
+
+This is one of the reasons centralization is essential — per-actor timers are extremely difficult to save/load correctly.
+
+---
+
+# **9. Respawn Categories (Optional Advanced Concept)**
+
+You may optionally assign respawn entries to logical groups:
+
+- “Trees”
+- “Rocks”
+- “Chests”
+- “FoliageCluster01”
+- “Dungeon1”
+
+This allows advanced behavior:
+
+- Throttling per category
+- Region-wide respawn cooldowns
+- Staggered visual respawn waves
+- Event-driven respawn resets (e.g., after a storm event)
+
+This is optional but future-proof.
+
+---
+
+# **10. How Respawn Manager Integrates with Other Systems**
+
+### **Loot System**
+
+Resource nodes generate loot → go inactive → respawn → call `ResetLoot()`.
+
+### **Foliage Interaction System**
+
+Harvested foliage instances → register → respawn → instance restored.
+
+### **Inventory System**
+
+WorldItemActors dropped in the world could respawn or replace themselves after decay (optional).
+
+### **Crafting Stations**
+
+Stations that deplete fuel or ingredients could be scheduled for regeneration (rare but possible).
+
+### **AI / Combat Systems**
+
+Destructible shields, traps, enemy spawners, dungeon resets.
+
+---
+
+# **11. Benefits Summary**
+
+| Benefit | What It Solves |
+| --- | --- |
+| Centralized scheduling | Prevents thousands of actor timers |
+| Weak reference storage | Avoids invalid pointers & crashes |
+| Consistent lifecycle | No system-by-system respawn logic |
+| Plugin-friendly interface | Any plugin can respawn safely |
+| Multiplayer correctness | Server handles everything |
+| Easy persistence | Save/load becomes trivial |
+| Performance | Efficient even in massive worlds |
+
+---
+
+# **12. Conceptual Diagram**
+
+```
+           [Actor Harvested/Destroyed]
+                       ↓
+            Actor Registers Respawn
+                       ↓
+             Respawn Manager Queue
+                       ↓
+                 Countdown Timer
+                       ↓
+             OnRespawnRequested()
+                       ↓
+       Actor Restores State (mesh, loot, collision)
+                       ↓
+                 Actor Active Again
+```

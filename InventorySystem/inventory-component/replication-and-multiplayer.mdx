@@ -1,0 +1,153 @@
+---
+title: "Replication & Multiplayer"
+description: "is fully replicated for multiplayer games."
+---
+
+# Replication & Multiplayerr
+
+### **Overview**
+
+`InventoryComponent` is fully replicated for multiplayer games.
+
+### **Replicated Properties**
+
+- **Items array**: All inventory slots
+- **Max Slots**: Capacity
+- **Max Weight**: Weight limit
+- **Current Weight**: Total weight
+
+### **Server Authority**
+
+All inventory modifications go through the server:
+
+1. **Client** calls `AddItem()`
+2. **Server** validates and adds item
+3. **Server** replicates change to all clients
+4. **Clients** receive updated inventory
+
+### **RPC Functions**
+
+Server RPCs for authority:
+
+```
+UFUNCTION(Server, Reliable)
+void Server_AddItem(UItemDataAsset* ItemData, int32 Quantity);
+
+UFUNCTION(Server, Reliable)
+void Server_RemoveItem(FName ItemID, int32 Quantity);
+
+UFUNCTION(Server, Reliable)
+void Server_MoveItem(int32 FromIndex, int32 ToIndex);
+```
+
+### **Client Prediction**
+
+For responsive gameplay, implement client-side prediction:
+
+```
+// Client predicts immediately
+InventoryComponent->AddItem(ItemData, Quantity);
+
+// Server validates
+if (bServerValidated)
+{
+    // Success - client was correct
+}
+else
+{
+    // Rollback - server rejected
+    InventoryComponent->RemoveItem(ItemData, Quantity);
+}
+```
+
+---
+
+## **Best Practices**
+
+1. **Use AddItem() for simplicity**: When you just need to add items by type
+2. **Use AddItemInstance() for custom items**: When items have unique properties
+3. **Handle overflow**: Always check for overflow when adding items
+4. **Validate before removing**: Check if items exist before removing
+5. **Use events for UI updates**: Bind to OnSlotUpdated for reactive UI
+6. **Enable auto-sort for convenience**: Makes inventory management easier
+7. **Set appropriate weight limits**: Balance realism with gameplay
+8. **Test multiplayer**: Ensure all operations work with server authority
+9. **Use container restrictions**: Prevent players from breaking game logic
+10. **Implement weight penalties**: Make encumbrance meaningful
+
+---
+
+## **Common Patterns**
+
+### **Safe Item Addition**
+
+```
+TArray<FItemInstance> Overflow;
+bool bSuccess = InventoryComponent->TryAddItemAtSlot(ItemInstance, -1, Overflow);
+
+if (!bSuccess || Overflow.Num() > 0)
+{
+    // Not all items fit
+    for (const FItemInstance& OverflowItem : Overflow)
+    {
+        // Drop in world
+        InventoryComponent->SpawnWorldItem(OverflowItem, DropLocation);
+    }
+    ShowNotification("Inventory full - some items dropped");
+}
+```
+
+### **Transferring with Validation**
+
+```
+// Check if target can accept item
+FItemInstance ItemToTransfer = SourceInventory->GetItemAtIndex(SourceSlot);
+if (TargetInventory->CanAddItemWeight(ItemToTransfer.ItemData, ItemToTransfer.Quantity))
+{
+    bool bSuccess = SourceInventory->TransferItem(SourceSlot, TargetInventory, -1, ItemToTransfer.Quantity);
+    if (bSuccess)
+    {
+        ShowNotification("Item transferred");
+    }
+}
+else
+{
+    ShowNotification("Target inventory too full");
+}
+```
+
+### **Consuming Ingredients**
+
+```
+// For crafting - consume multiple ingredients
+bool bHasAll = true;
+for (const FRecipeIngredient& Ingredient : Recipe->RequiredIngredients)
+{
+    int32 Available = InventoryComponent->GetItemCount(Ingredient.ItemData->ItemID);
+    if (Available < Ingredient.Quantity)
+    {
+        bHasAll = false;
+        break;
+    }
+}
+
+if (bHasAll)
+{
+    // Consume all ingredients
+    for (const FRecipeIngredient& Ingredient : Recipe->RequiredIngredients)
+    {
+        InventoryComponent->RemoveItemByAsset(Ingredient.ItemData, Ingredient.Quantity);
+    }
+    // Craft the item
+}
+```
+
+---
+
+## **Performance Considerations**
+
+- **Slot count**: More slots = more memory and replication cost
+- **Weight calculations**: Cached and updated on changes only
+- **Sorting**: O(n log n) operation - don't sort every frame
+- **Replication**: Only changed slots replicate (not entire inventory)
+- **UI updates**: Use events to update only changed slots

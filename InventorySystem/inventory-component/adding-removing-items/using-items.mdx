@@ -1,0 +1,27 @@
+---
+title: "Using Items"
+description: "Consume or activate an item:"
+---
+
+Consume or activate an item:
+
+**Blueprint**:
+
+```
+[InventoryComponent] → UseItemAtIndex
+   Index: 5
+   Return: Success
+```
+
+**C++**:
+
+```
+bool bUsed = InventoryComponent->UseItemAtIndex(5);
+```
+
+This will:
+
+1. Trigger the item's Consumable Ability (if consumable)
+2. Reduce quantity if `bAutoConsumeOnUse` is true
+3. Remove from inventory if quantity reaches 0
+4. Apply any item effects

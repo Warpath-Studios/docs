@@ -1,0 +1,441 @@
+---
+title: "Example Implementations"
+description: "This page gives practical examples of how to use the Respawn Manager in common gameplay scenarios:"
+---
+
+This page gives **practical examples** of how to use the Respawn Manager in common gameplay scenarios:
+
+- Resource nodes (trees, rocks, ore)
+- Loot chests
+- Foliage-based harvestables
+- Enemy spawners
+- Traps / destructibles
+
+Use these as templates and adapt to your own systems.
+
+---
+
+## **1. Resource Node — Tree (Blueprint)**
+
+A classic “harvest → wait → regrow” pattern.
+
+### Setup
+
+Blueprint: `BP_TreeNode`
+
+- Components:
+
+  - `StaticMesh` (TreeMesh)
+  - `LootComponent` (optional, for logs, sticks, sap)
+- Variables:
+
+  - `RespawnTime` (float, e.g. 300.0)
+  - `bHasBeenHarvested` (bool)
+
+Implements `BPI_Respawnable`.
+
+---
+
+### On Harvest (Blueprint)
+
+```
+Event OnHarvested
+   ↓
+Branch: bHasBeenHarvested?
+   True  → Return
+   False →
+       Set bHasBeenHarvested = true
+       ↓
+       LootComponent → Generate Loot
+           → For each item → Add to player inventory / Spawn world items
+       ↓
+       TreeMesh → Set Visibility(false)
+       TreeMesh → Set Collision Enabled(NoCollision)
+       Disable interaction (if you use an interaction component)
+       ↓
+       Get World Subsystem (RespawnManagerSubsystem)
+           → Register Respawn Request
+               Target Actor = Self
+               Delay        = RespawnTime
+```
+
+---
+
+### On Respawn (Blueprint)
+
+```
+Event OnRespawnRequested  (from BPI_Respawnable)
+   ↓
+Set bHasBeenHarvested = false
+LootComponent → Reset Loot
+TreeMesh → Set Visibility(true)
+TreeMesh → Set Collision Enabled(QueryAndPhysics)
+Enable interaction
+```
+
+That’s a full, renewable tree node.
+
+---
+
+## **2. Resource Node — Ore Vein (C++)**
+
+### Header
+
+```
+UCLASS()
+class YOURGAME_API AOreNode : public AActor, public IRespawnable
+{
+    GENERATED_BODY()
+
+public:
+    AOreNode();
+
+    void OnHarvested(APlayerController* Harvester);
+
+    // IRespawnable
+    virtual void OnRespawnRequested() override;
+
+protected:
+    UPROPERTY(VisibleAnywhere)
+    UStaticMeshComponent* Mesh;
+
+    UPROPERTY(VisibleAnywhere)
+    ULootComponent* LootComponent;
+
+    UPROPERTY(EditAnywhere, Category="Respawn")
+    float RespawnTime = 240.0f;
+
+    bool bHarvested = false;
+};
+```
+
+### Source
+
+```
+AOreNode::AOreNode()
+{
+    Mesh = CreateDefaultSubobject<UStaticMeshComponent>("Mesh");
+    RootComponent = Mesh;
+
+    LootComponent = CreateDefaultSubobject<ULootComponent>("LootComponent");
+}
+
+void AOreNode::OnHarvested(APlayerController* Harvester)
+{
+    if (bHarvested) return;
+    bHarvested = true;
+
+    // Generate loot
+    if (LootComponent && Harvester)
+    {
+        FLootResult Loot = LootComponent->GenerateLoot();
+
+        if (AMyCharacter* Character = Cast<AMyCharacter>(Harvester->GetPawn()))
+        {
+            for (const FLootedItem& Item : Loot.SpawnedItems)
+            {
+                Character->InventoryComponent->AddItem(Item.ItemData, Item.Quantity);
+            }
+        }
+    }
+
+    // Disable visuals and collision
+    Mesh->SetVisibility(false);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    // Register respawn
+    if (URespawnManagerSubsystem* RM = GetWorld()->GetSubsystem<URespawnManagerSubsystem>())
+    {
+        RM->RegisterRespawnRequest(this, RespawnTime);
+    }
+}
+
+void AOreNode::OnRespawnRequested()
+{
+    bHarvested = false;
+
+    if (LootComponent)
+    {
+        LootComponent->ResetLoot();
+    }
+
+    Mesh->SetVisibility(true);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+```
+
+---
+
+## **3. Respawnable Loot Chest (Blueprint)**
+
+Chest that refills over time.
+
+### Setup
+
+Blueprint: `BP_RespawnChest`
+
+- Components:
+
+  - `StaticMesh` (ChestMesh)
+  - `LootComponent`
+- Variables:
+
+  - `RespawnTime`
+  - `bIsOpen` (bool)
+
+Implements `BPI_Respawnable`.
+
+---
+
+### On Chest Opened (Blueprint)
+
+```
+Event OnChestOpened
+   ↓
+Branch: bIsOpen?
+   True  → Return (already open / on cooldown)
+   False →
+       Set bIsOpen = true
+       ↓
+       LootComponent → Generate Loot
+           → Give items to player
+       ↓
+       Play "open" animation or swap mesh
+       Disable interaction
+       ↓
+       Get World Subsystem (RespawnManagerSubsystem)
+           → Register Respawn Request
+               Target Actor = Self
+               Delay        = RespawnTime
+```
+
+---
+
+### On Respawn (Blueprint)
+
+```
+Event OnRespawnRequested
+   ↓
+Set bIsOpen = false
+LootComponent → Reset Loot
+Play "close" animation or swap back to closed mesh
+Enable interaction
+```
+
+This gives you a camp/world chest that periodically refills.
+
+---
+
+## **4. Foliage Harvest (Instance-Based) + Respawn (C++ Pseudocode)**
+
+For truly instanced foliage via `UHierarchicalInstancedStaticMeshComponent`:
+
+### On Harvest (C++ Pseudocode in FoliageInteractionManager)
+
+```
+void UFoliageInteractionManager::HandleHarvest(
+    UHierarchicalInstancedStaticMeshComponent* HISM,
+    int32 InstanceIndex,
+    APlayerController* Harvester
+)
+{
+    if (!HISM) return;
+
+    FTransform InstanceTransform;
+    HISM->GetInstanceTransform(InstanceIndex, InstanceTransform, true);
+
+    // Remove the instance
+    HISM->RemoveInstance(InstanceIndex);
+
+    // (Optional) Generate loot here or via a LootTable reference
+
+    // Build respawn data
+    FFoliageRespawnEntry Entry;
+    Entry.Component = HISM;
+    Entry.Transform = InstanceTransform;
+    Entry.FoliageTypeID = TEXT("Bush"); // optional category
+
+    if (URespawnManagerSubsystem* RM = GetWorld()->GetSubsystem<URespawnManagerSubsystem>())
+    {
+        RM->RegisterFoliageRespawn(Entry, FoliageRespawnTime);
+    }
+}
+```
+
+### On Foliage Respawn (called by Respawn Manager)
+
+```
+void UFoliageInteractionManager::OnFoliageRespawn(const FFoliageRespawnEntry& Entry)
+{
+    if (!Entry.Component.IsValid())
+        return;
+
+    UHierarchicalInstancedStaticMeshComponent* HISM = Entry.Component.Get();
+    HISM->AddInstance(Entry.Transform);
+}
+```
+
+This keeps foliage **purely instanced**, with Respawn Manager only scheduling when instances come back.
+
+---
+
+## **5. Enemy Spawner with Respawn Manager (C++)**
+
+Spawner uses Respawn Manager, enemy uses LootComponent.
+
+### Spawner Header
+
+```
+UCLASS()
+class YOURGAME_API AEnemySpawner : public AActor, public IRespawnable
+{
+    GENERATED_BODY()
+
+public:
+    AEnemySpawner();
+
+    void OnEnemyDied(AActor* DeadEnemy);
+
+    virtual void OnRespawnRequested() override;
+
+protected:
+    UPROPERTY(EditAnywhere, Category="Spawning")
+    TSubclassOf<AEnemyBase> EnemyClass;
+
+    UPROPERTY(EditAnywhere, Category="Spawning")
+    float RespawnDelay = 60.0f;
+
+    UPROPERTY()
+    AEnemyBase* ActiveEnemy;
+};
+```
+
+### Spawner Source
+
+```
+void AEnemySpawner::OnEnemyDied(AActor* DeadEnemy)
+{
+    ActiveEnemy = nullptr;
+
+    if (URespawnManagerSubsystem* RM = GetWorld()->GetSubsystem<URespawnManagerSubsystem>())
+    {
+        RM->RegisterRespawnRequest(this, RespawnDelay);
+    }
+}
+
+void AEnemySpawner::OnRespawnRequested()
+{
+    if (!EnemyClass) return;
+
+    FActorSpawnParameters Params;
+    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+    ActiveEnemy = GetWorld()->SpawnActor<AEnemyBase>(
+        EnemyClass,
+        GetActorLocation(),
+        GetActorRotation(),
+        Params
+    );
+
+    if (ActiveEnemy)
+    {
+        ActiveEnemy->SetSpawner(this); // so enemy can call OnEnemyDied
+    }
+}
+```
+
+### Enemy Death (simplified)
+
+```
+void AEnemyBase::Die()
+{
+    // Handle loot via LootComponent
+    FLootResult Loot = LootComponent->GenerateLoot();
+    // Spawn WorldItemActors or auto-loot…
+
+    if (Spawner)
+    {
+        Spawner->OnEnemyDied(this);
+    }
+
+    Destroy();
+}
+```
+
+This cleanly separates:
+
+- **LootComponent** → what drops
+- **Respawn Manager + Spawner** → when a new enemy appears
+
+---
+
+## **6. Trap / Destructible with Cooldown (Blueprint)**
+
+Example: a spike trap that fires, disables, then resets after a delay.
+
+### Setup
+
+Blueprint: `BP_SpikeTrap`
+
+- Components:
+
+  - Mesh, Collision, maybe a skeletal mesh for animation
+- Variables:
+
+  - `RespawnTime`
+  - `bIsActive`
+
+Implements `BPI_Respawnable`.
+
+---
+
+### When Triggered
+
+```
+Event OnTrapTriggered
+   ↓
+Branch: bIsActive?
+   False → Return
+   True  →
+       Set bIsActive = false
+       Play fire animation
+       Apply damage to overlapping actors
+       Disable collision for a bit (or immediately)
+       ↓
+       Get RespawnManagerSubsystem
+          → Register Respawn Request
+             Target Actor = Self
+             Delay        = RespawnTime
+```
+
+### On Respawn (Reset)
+
+```
+Event OnRespawnRequested
+   ↓
+Set bIsActive = true
+Reset trap animation state (go back to idle)
+Enable collision (if needed)
+```
+
+Now the trap behaves like any other timed game element.
+
+---
+
+## **7. Quick Checklist for Implementations**
+
+When you create a new respawnable:
+
+1. **Decide:** Actor-based or foliage-instance based?
+2. Implement **“inactive” state** (hidden, no collision, no interaction)
+3. On “used/harvested/depleted”:
+
+   - Do your game logic (loot / damage / destruction)
+   - Call `RegisterRespawnRequest` on the manager
+4. Implement `OnRespawnRequested` (via interface or Blueprint event):
+
+   - Reset flags
+   - Reset loot / state
+   - Re-enable visuals, collision, interaction
+
+If you follow that pattern everywhere, everything that “comes back later” in your game will feel consistent and be easy to tune.

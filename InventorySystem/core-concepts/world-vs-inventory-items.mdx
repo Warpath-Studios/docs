@@ -1,0 +1,152 @@
+---
+title: "World vs Inventory Items"
+description: "World Items are physical actors placed in or spawned into the game world that players can see and interact with."
+---
+
+**World Items** are physical actors placed in or spawned into the game world that players can see and interact with.
+
+**Class**: `AWorldItemActor` **Location**: `/Public/Items/WorldItemActor.h`
+
+**Key Properties**
+
+```
+FItemInstance ItemInstance;     // The item data
+bool bIsInfinite;               // Infinite pickup (for demos)
+float DespawnTime;              // Auto-despawn timer (0 = never)
+UStaticMeshComponent* MeshComponent;  // Visual representation
+```
+
+**Creating World Items**
+
+**Method 1: Place in Level**
+
+1. Drag `WorldItemActor` into level
+2. Set `ItemInstance` properties manually
+3. Or call `InitializeFromInstance()` with a pre-made instance
+
+**Method 2: Spawn from Code**
+
+```
+// Blueprint or C++
+AWorldItemActor* WorldItem = GetWorld()->SpawnActor<AWorldItemActor>(
+    AWorldItemActor::StaticClass(),
+    SpawnLocation,
+    SpawnRotation
+);
+
+WorldItem->InitializeFromInstance(ItemInstance);
+```
+
+**Method 3: Drop from Inventory**
+
+```
+InventoryComponent->SpawnWorldItem(ItemInstance, DropLocation);
+```
+
+**Despawn Timer**
+
+```
+DespawnTime = 0.0    → Never despawns
+DespawnTime = 60.0   → Despawns after 60 seconds
+DespawnTime = 300.0  → Despawns after 5 minutes
+```
+
+Useful for preventing world clutter in survival games.
+
+**Infinite Pickup**
+
+```
+bIsInfinite = true;
+```
+
+The item can be picked up repeatedly without being destroyed. Useful for:
+
+- Demo/tutorial items
+- Respawning resource nodes
+- Testing
+
+### **Inventory Items**
+
+**Inventory Items** are `FItemInstance` structures stored inside `InventoryComponent`. They have no physical presence until spawned.
+
+**Lifecycle**
+
+1. **Pickup**: WorldItemActor → FItemInstance (added to inventory)
+2. **Storage**: FItemInstance exists in InventoryComponent
+3. **Drop**: FItemInstance → WorldItemActor (spawned in world)
+
+**Key Difference**
+
+| **Aspect** | **World Item** | **Inventory Item** |
+| --- | --- | --- |
+| Type | Actor (AWorldItemActor) | Struct (FItemInstance) |
+| Visible | Yes, in game world | No, UI only |
+| Performance | Each is an actor (expensive) | Lightweight struct |
+| Interaction | Raycast to pick up | UI interaction |
+| Persistence | Saved as actor | Saved in inventory |
+
+### **Transitioning Between States**
+
+**World → Inventory (Pickup)**
+
+```
+// InteractionComponent triggers this
+InventoryComponent->AddItemInstance(WorldItem->ItemInstance);
+WorldItem->Destroy();
+```
+
+**Inventory → World (Drop)**
+
+```
+// Drop item at player's feet
+FVector DropLocation = PlayerCharacter->GetActorLocation() +
+                       PlayerCharacter->GetActorForwardVector() * 100;
+
+InventoryComponent->SpawnWorldItem(ItemInstance, DropLocation);
+InventoryComponent->RemoveItemByID(ItemInstance.ItemID, Quantity);
+```
+
+### **Best Practices**
+
+**World Items**:
+
+- Use sparingly (each is an actor)
+- Set despawn timers in survival games
+- Use object pooling for frequently spawned items
+- Consider LOD for distant items
+
+**Inventory Items**:
+
+- Preferred for storage (lightweight)
+- Use for player inventory, containers, vendors
+- Batch operations when possible
+- Validate before adding
+
+### **Container Items**
+
+Containers (chests, boxes, etc.) use `InventoryComponent` to store items:
+
+```
+Chest Actor
+└── InventoryComponent
+    ├── Slot 0: Iron Sword x1
+    ├── Slot 1: Health Potion x5
+    └── Slot 2: Gold Ore x20
+```
+
+When a player opens a chest:
+
+1. Player UI shows the chest's InventoryComponent
+2. Player can transfer items between their inventory and the chest
+3. Items remain as FItemInstance throughout (no world spawning needed)
+
+---
+
+## **Summary**
+
+- **Item IDs** uniquely identify item types
+- **ItemDataAsset** defines what an item type is (the template)
+- **FItemInstance** represents a specific instance with unique properties
+- **Stacking Policies** control how items merge based on their characteristics
+- **World Items** are physical actors in the world
+- **Inventory Items** are lightweight structs stored in components

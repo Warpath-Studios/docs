@@ -1,0 +1,116 @@
+---
+title: "World Item Actors"
+description: "World items represent pickable items in the world."
+---
+
+World items represent **pickable items in the world**.
+
+**Location:**  
+`/Public/Items/WorldItemActor.h`
+
+### Core Properties
+
+Typical fields on `AWorldItemActor`:
+
+- `FItemInstance ItemInstance` – The item being represented
+- `bool bIsInfinite` – If true, can be picked up repeatedly
+- `float DespawnTime` – Auto-despawn after N seconds (`0 = never`)
+- `UStaticMeshComponent* MeshComponent` – The visual mesh
+
+---
+
+### Creating World Items
+
+Method 1: Place in Level (Preconfigured)
+
+1. Drag **WorldItemActor** into the level
+2. In **Details**:
+
+```
+Item Instance:
+   Item ID:      HealthPotion
+   Quantity:     5
+   Item Data:    DA_HealthPotion
+```
+
+Method 2: Initialize from Item Data (Blueprint)
+
+```
+Event BeginPlay
+   ↓
+Initialize From Item Data
+   Item Data: DA_HealthPotion
+   Quantity:  5
+```
+
+Method 3: Spawn Programmatically (C++)
+
+```
+FVector SpawnLocation = GetActorLocation() + FVector(100, 0, 0);
+FRotator SpawnRotation = FRotator::ZeroRotator;
+
+AWorldItemActor* DroppedItem = GetWorld()->SpawnActor<AWorldItemActor>(
+    AWorldItemActor::StaticClass(),
+    SpawnLocation,
+    SpawnRotation
+);
+
+FItemInstance ItemToSpawn;
+ItemToSpawn.ItemID   = "IronSword";
+ItemToSpawn.ItemData = IronSwordAsset;
+ItemToSpawn.Quantity = 1;
+
+DroppedItem->InitializeFromInstance(ItemToSpawn);
+```
+
+---
+
+### Pickup Logic
+
+When the player interacts with a `WorldItemActor`, it should try to add the item to their inventory.
+
+C++ Example (OnInteract)
+
+```
+void AWorldItemActor::OnInteract(APlayerController* Interactor)
+{
+    AMyCharacter* Character = Cast<AMyCharacter>(Interactor->GetPawn());
+    if (Character && Character->InventoryComponent)
+    {
+        bool bSuccess = Character->InventoryComponent->AddItemInstance(ItemInstance);
+
+        if (bSuccess)
+        {
+            if (!bIsInfinite)
+            {
+                Destroy();
+            }
+        }
+        else
+        {
+            // Show "Inventory Full" or similar HUD message
+            ShowNotification(Interactor, TEXT("Inventory Full"));
+        }
+    }
+}
+```
+
+Blueprint Pattern
+
+```
+Event On Interact (Player Controller)
+   ↓
+Get Controlled Pawn → Cast to Character
+   ↓
+Get InventoryComponent
+   ↓
+Add Item Instance (ItemInstance)
+   ↓
+Branch: Success?
+   True →
+      Branch: bIsInfinite?
+          True  → Do nothing (keep item)
+          False → Destroy Actor
+   False →
+      Show "Inventory Full" Notification
+```

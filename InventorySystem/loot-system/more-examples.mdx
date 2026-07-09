@@ -1,0 +1,101 @@
+---
+title: "More Examples"
+description: "Character Blueprint:"
+---
+
+## Enemy Drops
+
+### Setup
+
+**Character Blueprint:** `BP_Zombie`
+
+Components:
+
+- `SkeletalMesh`
+- `HealthComponent`
+- `LootComponent`
+
+**LootComponent config:**
+
+- Loot Table: `LT_ZombieLoot`
+- Single Use: `true`
+- Auto Detect Level: `true`
+- Level Property Name: `"CharacterLevel"` (or your own)
+
+**Loot Table:** `LT_ZombieLoot`
+
+Entries:
+
+- `[0]` Rotten Flesh
+
+  - Item Data: `DA_RottenFlesh`
+  - Drop Weight: `80`
+  - Min: `1` / Max: `3`
+- `[1]` Bone
+
+  - Item Data: `DA_Bone`
+  - Drop Weight: `50`
+  - Min: `1` / Max: `2`
+- `[2]` Iron Sword
+
+  - Item Data: `DA_IronSword`
+  - Drop Weight: `5`
+  - Quantity: `1`
+
+**Max Items To Spawn:** `2`
+
+---
+
+### On Death (Blueprint Pattern)
+
+```
+Event On Death (HealthComponent / Character)
+   ↓
+Generate Loot (LootComponent)
+   → Loot Result
+   ↓
+For Each: Loot Result.Spawned Items
+   ↓
+Spawn Actor: WorldItemActor
+   Location = Death Location + Random Offset
+   Initialize with ItemInstance from LootedItem
+   ↓
+Destroy Enemy
+```
+
+You can also choose to add items directly to a player’s inventory (for auto-loot) instead of spawning world items.
+
+---
+
+### On Death (C++ Example)
+
+```
+void AZombie::Die()
+{
+    // Generate loot
+    FLootResult LootResult = LootComponent->GenerateLoot();
+
+    // Spawn world items
+    for (const FLootedItem& LootedItem : LootResult.SpawnedItems)
+    {
+        FVector SpawnLocation = GetActorLocation() +
+                                FMath::VRand() * 50.0f;  // random offset
+
+        AWorldItemActor* DroppedItem = GetWorld()->SpawnActor<AWorldItemActor>(
+            WorldItemActorClass,
+            SpawnLocation,
+            FRotator::ZeroRotator
+        );
+
+        FItemInstance ItemInstance;
+        ItemInstance.ItemID     = LootedItem.ItemData->ItemID;
+        ItemInstance.ItemData   = LootedItem.ItemData;
+        ItemInstance.Quantity   = LootedItem.Quantity;
+        ItemInstance.RarityTag  = LootedItem.RolledRarity;
+
+        DroppedItem->InitializeFromInstance(ItemInstance);
+    }
+
+    Destroy();
+}
+```

@@ -1,0 +1,174 @@
+---
+title: "Asset Manager Configuration"
+description: "UMI relies on Unreal’s Asset Manager to load Item Data Assets, Loot Tables, and Crafting Recipes correctly in both PIE and packaged builds."
+---
+
+UMI relies on Unreal’s **Asset Manager** to load Item Data Assets, Loot Tables, and Crafting Recipes correctly in both PIE and packaged builds.
+
+If these assets are not registered, you may see:
+
+- “Unknown Item” or missing item data
+- Empty loot drops in packaged builds
+- Crafting recipes not found or failing silently
+- Async loading warnings or missing references
+
+Correct Asset Manager setup is required for any production project using UMI.
+
+---
+
+### 1. Register Item Data Assets (`UItemDataAsset`)
+
+Item Data Assets define the template and metadata for each item type.
+
+**Steps**
+
+1. Open **Edit → Project Settings → Asset Manager**
+2. Under **Primary Asset Types to Scan**, click **Add**
+3. Configure the entry:
+
+| Field | Value |
+| --- | --- |
+| Primary Asset Type | `ItemData` |
+| Asset Base Class | `UItemDataAsset` |
+| Has Blueprint Classes | `False` |
+| Directories | Folder(s) with item data assets |
+
+Example directory:  
+`/Game/Items/ItemData`
+
+**INI Example**
+
+```
+[/Script/Engine.AssetManagerSettings]
++PrimaryAssetTypesToScan=(
+    PrimaryAssetType="ItemData",
+    AssetBaseClass="/Script/UMI.ItemDataAsset",
+    bHasBlueprintClasses=False,
+    Directories=((Path="/Game/Items/ItemData"))
+)
+```
+
+**Why this matters**
+
+- Ensures item data is cooked and available in packaged builds
+- Allows UMI to resolve **Item IDs → Item Definitions**
+- Supports async streaming of item definitions
+
+---
+
+### 2. Register Loot Tables (`ULootTable`)
+
+Loot Tables define what items drop from:
+
+- Containers
+- Enemies
+- Foliage / resource nodes
+- Breakables
+- World pickups
+
+**Steps**
+
+1. Go to **Edit → Project Settings → Asset Manager**
+2. Under **Primary Asset Types to Scan**, click **Add**
+3. Configure the entry:
+
+| Field | Value |
+| --- | --- |
+| Primary Asset Type | `LootTable` |
+| Asset Base Class | `ULootTable` |
+| Has Blueprint Classes | `False` |
+| Directories | Folder(s) with loot tables |
+
+Example directory:  
+`/Game/Items/LootTables`
+
+**INI Example**
+
+```
++PrimaryAssetTypesToScan=(
+    PrimaryAssetType="LootTable",
+    AssetBaseClass="/Script/UMI.LootTable",
+    bHasBlueprintClasses=False,
+    Directories=((Path="/Game/Items/LootTables"))
+)
+```
+
+**Why this matters**
+
+- Loot may work in PIE but be **empty** in packaged builds without registration
+- Harvesting / containers / AI death loot can silently fail
+- Respawn/foliage systems won’t know what to spawn
+
+---
+
+### 3. Register Crafting Recipes (`UCraftingRecipeDataAsset`)
+
+If your project is using UMI’s **crafting system**, registering Crafting Recipes is **required**. Crafting recipes are data assets that define:
+
+- Inputs / ingredients
+- Outputs
+- Optional tools or station requirements
+- Optional tags or effects
+
+> If you are only using inventory/equipment and not the crafting system, you can skip this section.
+
+**Steps**
+
+1. Open **Edit → Project Settings → Asset Manager**
+2. Under **Primary Asset Types to Scan**, click **Add**
+3. Configure the entry:
+
+| Field | Value |
+| --- | --- |
+| Primary Asset Type | `CraftingRecipe` |
+| Asset Base Class | `UCraftingRecipeDataAsset` |
+| Has Blueprint Classes | `False` |
+| Directories | Folder(s) with recipe assets |
+
+Example directory:  
+`/Game/Crafting/Recipes`
+
+**INI Example**
+
+```
++PrimaryAssetTypesToScan=(
+    PrimaryAssetType="CraftingRecipe",
+    AssetBaseClass="/Script/UMI.CraftingRecipeDataAsset",
+    bHasBlueprintClasses=False,
+    Directories=((Path="/Game/Crafting/Recipes"))
+)
+```
+
+**Why this matters**
+
+- Crafting UIs and stations can’t discover recipes reliably without registration
+- Soft references and tag-based lookups may fail in packaged builds
+- Ensures recipes are available for async loading and validation
+
+---
+
+### Common Pitfalls
+
+- **Loot works in PIE but not in packaged builds**  
+  → `LootTable` not registered, or loot assets stored outside scanned directories.
+- **Items show as Unknown / Invalid**  
+  → `ItemData` not registered, or item data assets stored in unscanned folders.
+- **Crafting UI shows no recipes**  
+  → `CraftingRecipe` type not registered, or recipes in unregistered directories.
+- **Async load / soft reference warnings**  
+  → Asset Manager does not know about the asset type or directory.
+
+---
+
+### Verification Checklist
+
+After configuring the Asset Manager:
+
+1. Restart the editor.
+2. Package a small test build.
+3. Verify:
+
+   - Items appear correctly (names, icons, data).
+   - Loot drops properly from containers / harvestables.
+   - Crafting UIs display recipes and can craft items.
+4. Watch the **Output Log** for any Asset Manager or load warnings.

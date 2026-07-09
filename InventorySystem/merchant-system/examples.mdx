@@ -1,0 +1,198 @@
+---
+title: "Examples"
+description: "Scenario: General goods merchant that buys and sells common items."
+---
+
+### **Example 1: Basic Shop**
+
+**Scenario**: General goods merchant that buys and sells common items.
+
+```
+BP_Merchant_GeneralStore:
+
+  Config:
+    bHasStock = true
+    bBuysAnything = true              // Buys all items
+    bHasBuyList = false
+    bReplenishOnBuyback = true        // Resells bought items
+    MarketFeePercent = 5.0
+    BuybackPercent = 50.0
+    AcceptedCurrency = Gold
+
+  StockItems:
+    [0] Health Potion
+        MaxStock = 30
+        CurrentStock = 30
+        UnitPriceOverride = -1.0      // Use default
+        ReplenishMode = UseVendorDefault
+
+    [1] Bread
+        MaxStock = 50
+        CurrentStock = 50
+        UnitPriceOverride = 5.0
+        ReplenishMode = UseVendorDefault
+
+    [2] Rope
+        MaxStock = 10
+        CurrentStock = 10
+        UnitPriceOverride = -1.0
+        ReplenishMode = UseVendorDefault
+```
+
+**Result**:
+
+- Sells common items with 5% markup
+- Buys any item at 50% value
+- Bought items become available for other players
+
+---
+
+### **Example 2: Specialty Blacksmith**
+
+**Scenario**: Blacksmith who sells weapons/armor and buys materials only.
+
+```
+BP_Merchant_Blacksmith:
+
+  Config:
+    bHasStock = true
+    bBuysAnything = false
+    bHasBuyList = true                // Only buys materials
+    bReplenishOnBuyback = false       // Doesn't resell materials
+    MarketFeePercent = 0.0            // No fees
+    BuybackPercent = 40.0
+    AcceptedCurrency = Gold
+
+  StockItems:
+    [0] Iron Sword
+        MaxStock = 5
+        CurrentStock = 5
+        UnitPriceOverride = 150.0
+        ReplenishMode = NeverReplenish
+
+    [1] Steel Armor
+        MaxStock = 2
+        CurrentStock = 2
+        UnitPriceOverride = 500.0
+        ReplenishMode = NeverReplenish
+
+  BuyList:
+    - Iron_Ore
+    - Steel_Ingot
+    - Leather
+```
+
+**Result**:
+
+- Sells crafted items (limited stock)
+- Only buys raw materials at 40% value
+- Materials act as economic sink (not resold)
+
+---
+
+### **Example 3: Rare Item Vendor**
+
+**Scenario**: Vendor with infinite stock of rare consumables.
+
+```
+BP_Merchant_RareGoods:
+
+  Config:
+    bHasStock = false                 // INFINITE STOCK
+    bBuysAnything = false
+    bHasBuyList = false               // Doesn't buy
+    MarketFeePercent = 15.0           // Premium fee
+    BuybackPercent = 0.0              // N/A
+    AcceptedCurrency = Gems           // Premium currency!
+
+  StockItems:
+    [0] Phoenix_Feather
+        MaxStock = 999                // Ignored (infinite)
+        CurrentStock = 999            // Ignored (infinite)
+        UnitPriceOverride = 100.0     // 100 gems
+
+    [1] Dragon_Scale
+        MaxStock = 999
+        CurrentStock = 999
+        UnitPriceOverride = 250.0     // 250 gems
+```
+
+**Result**:
+
+- Never runs out of rare items
+- Premium currency and markup
+- Doesn't buy items from players
+
+---
+
+### **Example 4: Recycler/Junk Dealer**
+
+**Scenario**: NPC that only buys junk items (economic sink).
+
+```
+BP_Merchant_Recycler:
+
+  Config:
+    bHasStock = true
+    bBuysAnything = false
+    bHasBuyList = true
+    bReplenishOnBuyback = false       // Items disappear
+    MarketFeePercent = 0.0
+    BuybackPercent = 10.0             // Very low buyback
+    AcceptedCurrency = Gold
+
+  StockItems: []                      // Doesn't sell anything
+
+  BuyList:
+    - Broken_Gear
+    - Scrap_Metal
+    - Vendor_Trash
+    - Rotten_Food
+```
+
+**Result**:
+
+- Only function: remove junk from economy
+- Pays very little (10% of base value)
+- Items vanish when bought (economic sink)
+
+---
+
+### **Example 5: Event Merchant**
+
+**Scenario**: Limited-time merchant with special items.
+
+```
+BP_Merchant_Festival:
+
+  Config:
+    bHasStock = true
+    bBuysAnything = false
+    bHasBuyList = true
+    bReplenishOnBuyback = true        // Players can trade
+    MarketFeePercent = 0.0
+    BuybackPercent = 80.0             // High buyback (event)
+    AcceptedCurrency = FestivalToken  // Event currency
+
+  StockItems:
+    [0] Festival_Hat
+        MaxStock = 20
+        CurrentStock = 20
+        UnitPriceOverride = 10.0      // 10 tokens
+        ReplenishMode = AlwaysReplenish
+
+    [1] Firework
+        MaxStock = 100
+        CurrentStock = 100
+        UnitPriceOverride = 5.0
+        ReplenishMode = NeverReplenish // Consumable sink
+
+  BuyList:
+    - Festival_Collectible            // Players can trade
+```
+
+**Result**:
+
+- Uses event-specific currency
+- High buyback enables player trading
+- Mix of tradeable and consumable items

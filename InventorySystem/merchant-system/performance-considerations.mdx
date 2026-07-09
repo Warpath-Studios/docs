@@ -1,0 +1,35 @@
+---
+title: "Performance Considerations"
+description: "Prevent unbounded memory growth:"
+---
+
+### **Nonce Cache Pruning**
+
+Prevent unbounded memory growth:
+
+```
+MerchantComponent:
+  MaxNonceCacheSize = 1000          // Keep last 1000 nonces
+```
+
+Old nonces are automatically pruned when limit exceeded.
+
+### **Transaction Log Pruning**
+
+Prevent unbounded log growth:
+
+```
+MerchantComponent:
+  MaxTransactionLogSize = 10000     // Keep last 10000 transactions
+```
+
+Set to `0` for unlimited (if using external analytics).
+
+### **Replication**
+
+Only essential data replicates:
+
+- `Config` (lightweight)
+- `StockItems` (only current stock changes)
+
+Transaction logs and nonces are server-only.

@@ -1,0 +1,90 @@
+---
+title: "Currency System"
+description: "The merchant system supports two different currency models, allowing your game to use either traditional item-based money or a clean virtual currency syste"
+---
+
+The merchant system supports **two different currency models**, allowing your game to use either traditional item-based money or a clean virtual currency system depending on your design goals.
+
+---
+
+## **1. Physical Currency (Default)**
+
+Currency exists as normal **inventory items** (e.g., *Gold Coin*, *Silver Coin*).
+
+### **Characteristics**
+
+- Stored as items inside player inventory
+- Consumes inventory space
+- Can be **dropped, traded, looted, or stolen**
+- Visible directly in the inventory UI
+- Behaves like any other item (weight, stack limits, etc.)
+- Supports multi-denomination via separate item types
+
+### **Best For**
+
+- Survival/RPG games where items have physical presence
+- Games with weight/encumbrance mechanics
+- Systems where thieves, loss, or dropping money is intended
+- Worlds where gold should *feel* tangible
+
+### **Setup**
+
+1. Go to your PlayerProfile component in your player controller.
+2. Make sure Physical Currency is selected
+3. Set a reference to your physical coin item and then set the tag (Items.Currency for example)
+
+---
+
+## **2. Virtual Currency**
+
+Currency is stored as a **single integer value** in a component rather than as inventory items.
+
+### **Characteristics**
+
+- No inventory slots used
+- Cannot be dropped or stolen
+- Easy to save/load (via ISaveable integration)
+- Supports multi-denomination display (e.g., "1g 3s 18c")
+- Eliminates bag clutter and change-making logic
+- Works well with UI-driven shop systems
+
+### **Multi-Denomination Conversion Example**
+
+```
+TotalCoins = 1,318
+
+Gold   = TotalCoins / 10,000       → 1
+Silver = (TotalCoins % 10,000) / 100 → 3
+Copper = TotalCoins % 100            → 18
+
+Result: "1g 3s 18c"
+```
+
+### **Best For**
+
+- MMO-style economies
+- Games prioritizing clean UI and simple management
+- Systems with heavy trading or automated markets
+- Mobile-friendly experiences
+
+### **Setup**
+
+1. Go to your PlayerProfile component in your player controller.
+2. Make sure Virtual Currency is selected
+3. Add the PlayerCurrency component to your player controller
+4. Set a reference to your physical coin item and then set the tag (Items.Currency for example)
+
+---
+
+## **Currency Mode Comparison**
+
+| Feature | Physical Currency | Virtual Currency |
+| --- | --- | --- |
+| **Storage Location** | Inventory items | Integer stored on component |
+| **Consumes Inventory Space** | ✔️ Yes | ❌ No |
+| **Can Drop / Trade** | ✔️ Yes | ❌ No |
+| **World Pickups** | Adds items to inventory | Auto-converts to virtual balance |
+| **Multi-Denomination** | Multiple item types | Automatic formatting |
+| **Making Change** | Manual or item-based | Automatic |
+| **Save / Load** | Through inventory system | Through ISaveable component |
+| **Immersion Level** | High (physical coins) | Low/Medium (abstract coins) |

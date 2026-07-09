@@ -1,0 +1,86 @@
+---
+title: "Decay System"
+description: "Note: The decay system is part of the broader item framework."
+---
+
+## World Item Decay & Spoilage
+
+> **Note:**  
+> The decay system is part of the broader item framework.  
+> This section focuses on how it relates to **dropped loot / world items**.
+
+### Overview
+
+World-spawned items (loot on the ground) can:
+
+- **Decay over time** (durability loss)
+- **Despawn after a configured time**
+- Optionally be **converted to a spoiled variant** (e.g., fresh meat → spoiled meat)
+
+This prevents infinite world clutter and supports survival-style spoilage mechanics.
+
+---
+
+### Configuration
+
+**On** `ItemDataAsset`**:**
+
+- `Can Decay`: `true/false`
+- `Decay Rate`: `0.1` *(example)*
+
+  - Interpreted as durability loss per second (or per tick depending on your implementation)
+
+**On** `WorldItemActor`**:**
+
+- `Despawn Time`: e.g. `300.0` (seconds)
+
+  - How long an item can exist in the world before auto-despawn
+  - `0` or negative can be used to disable timed despawn if desired
+
+---
+
+### How It Works (Conceptual)
+
+1. A world item is spawned (loot drop, dropped item, etc.)
+2. Over time:
+
+   - Durability is reduced using the **item’s decay rate**
+   - Or a lifetime countdown runs based on `Despawn Time`
+3. When:
+
+   - Durability reaches `0` **or**
+   - The item’s lifetime expires  
+     Then one of the following happens:
+   - The item is **destroyed**
+   - Or replaced with a “spoiled” variant (e.g., fresh → spoiled food)
+
+---
+
+### Spoiled Items (Example Pattern)
+
+For **food** or other perishable items, you can implement a “spoiled” variant.
+
+Example Blueprint logic inside `BP_WorldItemActor`:
+
+```
+Event Tick (or Timer every 1 second)
+   ↓
+Branch: ItemData.CanDecay ?
+   True:
+      ItemInstance.Durability -= ItemData.DecayRate * DeltaTime
+      ↓
+      Branch: Durability <= 0 ?
+         True:
+            // Convert to spoiled version
+            Set Item Data = DA_SpoiledMeat   (or your spoiled asset)
+            Reset Durability (optional)
+            Set Despawn Time = 60 seconds    (optional shorter timer)
+         False:
+            // Still good, keep updating
+   False:
+      // No decay, do nothing
+```
+
+> **Important:**  
+> The exact implementation (Tick vs Timer vs central manager) is up to your project.  
+> UMI provides the **data hooks** (durability, decay rate, world item actor), but you can tailor the behavior to your genre and performance needs.

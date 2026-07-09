@@ -1,0 +1,70 @@
+---
+title: "Activating Items"
+description: "Activate whatever item is in a given slot:"
+---
+
+### Use a Hotbar Slot
+
+Activate whatever item is in a given slot:
+
+**Blueprint:**
+
+```
+[HotbarComponent] → UseHotbarSlot
+   Slot Index: 0
+   Return: Success (true/false)
+```
+
+**C++:**
+
+```
+bool bUsed = HotbarComponent->UseHotbarSlot(0);
+```
+
+Typical behavior when using a slot:
+
+- Gets the item assigned to that slot
+- Checks if the item is usable (weapon, consumable, tool, etc.)
+- Triggers the item’s use/action logic
+- Reduces quantity for consumables (if auto-consume is enabled)
+- Triggers auto-refill if the slot becomes empty
+
+---
+
+## Input Binding
+
+### Enhanced Input
+
+Create an **Input Action** per hotbar slot (or use a single action with a key value):
+
+- `IA_Hotbar1`
+- `IA_Hotbar2`
+- …
+- `IA_Hotbar9`
+
+In your character Blueprint:
+
+```
+IA_Hotbar1 (Triggered)
+   ↓
+[HotbarComponent] → UseHotbarSlot
+   Slot Index: 0
+```
+
+Repeat for all slots you want to support.
+
+### Legacy Input
+
+```
+void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+    PlayerInputComponent->BindAction("Hotbar1", IE_Pressed, this, &AMyCharacter::UseHotbarSlot1);
+    PlayerInputComponent->BindAction("Hotbar2", IE_Pressed, this, &AMyCharacter::UseHotbarSlot2);
+    // ...
+}
+
+void AMyCharacter::UseHotbarSlot1()
+{
+    HotbarComponent->UseHotbarSlot(0);
+}
+```

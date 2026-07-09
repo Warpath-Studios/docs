@@ -1,0 +1,136 @@
+---
+title: "Sorting System"
+description: "UMI provides a comprehensive sorting system with 8 sort methods."
+---
+
+### **Overview**
+
+UMI provides a comprehensive sorting system with 8 sort methods.
+
+### **Sort Types**
+
+```
+enum class EInventorySortType : uint8
+{
+    Name,          // Alphabetical by display name
+    Rarity,        // By rarity tier (Common → Legendary)
+    Quantity,      // By stack size
+    Weight,        // By individual item weight
+    Category,      // By gameplay tag category
+    Value,         // By item value (price)
+    Durability     // By current durability
+};
+```
+
+### **Sort Order**
+
+```
+enum class ESortOrder : uint8
+{
+    Ascending,     // A→Z, Low→High, Common→Legendary
+    Descending     // Z→A, High→Low, Legendary→Common
+};
+```
+
+### **Sorting Items**
+
+**Blueprint**:
+
+```
+[InventoryComponent] → SortInventory
+   Sort Type: Rarity
+   Sort Order: Descending
+```
+
+**C++**:
+
+```
+InventoryComponent->SortInventory(
+    EInventorySortType::Rarity,
+    ESortOrder::Descending
+);
+```
+
+### **Auto-Sort on Add**
+
+Enable automatic sorting whenever items are added:
+
+```
+Auto Sort On Add: true
+Default Sort Type: Name
+Default Sort Order: Ascending
+```
+
+**C++**:
+
+```
+InventoryComponent->bAutoSortOnAdd = true;
+InventoryComponent->DefaultSortType = EInventorySortType::Name;
+InventoryComponent->DefaultSortOrder = ESortOrder::Ascending;
+```
+
+### **Compact Empty Slots**
+
+Move all items to the front, removing gaps:
+
+**Blueprint**:
+
+```
+[InventoryComponent] → CompactInventory
+```
+
+**C++**:
+
+```
+InventoryComponent->CompactInventory();
+```
+
+Result:
+
+```
+Before:
+[Sword] [ ] [Potion] [ ] [ ] [Ore]
+
+After:
+[Sword] [Potion] [Ore] [ ] [ ] [ ]
+```
+
+### **Sort Examples**
+
+**By Name (Ascending)**
+
+```
+Axe, Bread, Health Potion, Iron Ore, Sword
+```
+
+**By Rarity (Descending)**
+
+```
+Legendary Blade, Epic Armor, Rare Ring, Uncommon Potion, Common Bread
+```
+
+**By Quantity (Descending)**
+
+```
+Wood x50, Stone x35, Iron Ore x20, Sword x1
+```
+
+**By Value (Descending)**
+
+```
+Diamond ($1000), Gold Bar ($500), Silver Ring ($100), Bread ($5)
+```
+
+### **Custom Sort Logic**
+
+Override sorting in Blueprint for custom behavior:
+
+```
+Event Custom Sort Compare
+   Item A: [Input]
+   Item B: [Input]
+   ↓
+   [Your custom comparison logic]
+   ↓
+   Return: -1 (A before B), 0 (equal), 1 (B before A)
+```

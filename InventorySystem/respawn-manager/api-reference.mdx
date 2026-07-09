@@ -1,0 +1,186 @@
+---
+title: "API Reference"
+description: "Returns complete merchant state for UI display."
+---
+
+### **Public Functions**
+
+**OpenVendor**
+
+```
+FMerchantSnapshot OpenVendor(APlayerController* Player);
+```
+
+Returns complete merchant state for UI display.
+
+**Returns**: `FMerchantSnapshot` containing config, stock, and buy list
+
+---
+
+**QuotePurchase**
+
+```
+FPurchaseQuote QuotePurchase(APlayerController* Player, UItemDataAsset* ItemData, int32 QtyRequested);
+```
+
+Generates price quote for player purchasing items.
+
+**Parameters**:
+
+- `Player`: Player controller requesting quote
+- `ItemData`: Item to purchase
+- `QtyRequested`: Desired quantity
+
+**Returns**: `FPurchaseQuote` with pricing, validation, and nonce
+
+**Validation**:
+
+- ✓ Player proximity
+- ✓ Item exists in stock
+- ✓ Stock availability (if finite)
+- ✓ Player has sufficient funds
+- ✓ Player inventory has space
+
+---
+
+**Server\_ConfirmPurchase**
+
+```
+void Server_ConfirmPurchase(APlayerController* Player, UItemDataAsset* ItemData,
+                           int32 Qty, float ClientQuotedPrice, FGuid Nonce);
+```
+
+Server RPC to execute purchase transaction.
+
+**Parameters**:
+
+- `Player`: Player executing purchase
+- `ItemData`: Item being purchased
+- `Qty`: Quantity to purchase
+- `ClientQuotedPrice`: Total from quote (for validation)
+- `Nonce`: Unique nonce from quote (for idempotency)
+
+**Atomic Operations**:
+
+1. Deduct currency from player
+2. Add items to player inventory
+3. Reduce stock (if finite)
+4. Log transaction
+5. Mark nonce as processed
+6. Broadcast events
+
+---
+
+**QuoteSell**
+
+```
+FSellQuote QuoteSell(APlayerController* Player, UItemDataAsset* ItemData, int32 QtyOffered);
+```
+
+Generates price quote for player selling items.
+
+**Returns**: `FSellQuote` with pricing and validation
+
+**Validation**:
+
+- ✓ Player proximity
+- ✓ Merchant accepts item type
+- ✓ Player owns sufficient quantity
+
+---
+
+**Server\_ConfirmSell**
+
+```
+void Server_ConfirmSell(APlayerController* Player, UItemDataAsset* ItemData,
+                       int32 Qty, float ClientQuotedPrice, FGuid Nonce);
+```
+
+Server RPC to execute sell transaction.
+
+**Atomic Operations**:
+
+1. Remove items from player inventory
+2. Add currency to player
+3. Apply replenishment logic (if configured)
+4. Log transaction
+5. Mark nonce as processed
+6. Broadcast events
+
+---
+
+**RestockNow**
+
+```
+FRestockResult RestockNow();
+```
+
+Restocks all items to maximum levels.
+
+**Returns**: `FRestockResult` with success status and item count
+
+**Behavior**:
+
+- Sets all `CurrentStock = MaxStock`
+- No-op if `bHasStock = false`
+- Can be called by admin/scripts/cron
+- Logs restock event
+- Broadcasts events
+
+---
+
+### **Utility Functions**
+
+**FindStockItem**
+
+```
+FStockItem* FindStockItem(UItemDataAsset* ItemData);
+```
+
+Finds stock entry by item reference.
+
+---
+
+**GetCurrentStock**
+
+```
+int32 GetCurrentStock(UItemDataAsset* ItemData) const;
+```
+
+Gets current stock quantity for an item.
+
+**Returns**: Current stock, or -1 if infinite stock or item not found
+
+---
+
+**WillBuyItem**
+
+```
+bool WillBuyItem(UItemDataAsset* ItemData) const;
+```
+
+Checks if merchant accepts item for buying.
+
+---
+
+**GetItemSellPrice**
+
+```
+float GetItemSellPrice(UItemDataAsset* ItemData, const FStockItem* StockItem = nullptr) const;
+```
+
+Calculates sell price (what player pays).
+
+**Priority**: Per-item override → Item's base value
+
+---
+
+**GetItemBuyPrice**
+
+```
+float GetItemBuyPrice(UItemDataAsset* ItemData, const FStockItem* StockItem = nullptr) const;
+```
+
+Calculates buy price (what merchant pays player).
+
+**Priority**: Per-item override → Vendor buyback %

@@ -1,0 +1,63 @@
+---
+title: "Storage & Slots"
+description: "Each inventory slot holds:"
+---
+
+### **Slot Structure**
+
+Each inventory slot holds:
+
+- **FItemInstance**: The item and its properties
+- **Cooldown information**: For usage cooldowns
+- **Index**: Slot position (0 to MaxSlots-1)
+
+```
+struct FInventorySlot
+{
+    FItemInstance Item;
+    float CooldownTime;
+    float CooldownRemaining;
+};
+```
+
+### **Configuration**
+
+**Max Slots**
+
+The maximum number of item slots:
+
+```
+Max Slots: 30    // Standard inventory
+Max Slots: 9     // Hotbar
+Max Slots: 50    // Large chest
+```
+
+**Blueprint**:
+
+```
+InventoryComponent->MaxSlots = 30;
+```
+
+**C++**:
+
+```
+InventoryComponent->SetMaxSlots(30);
+```
+
+**Inventory Type**
+
+```
+enum class EInventoryType : uint8
+{
+    Standard,      // Regular inventory
+    Hotbar,        // Quick access bar
+    Container,     // World container
+    Equipment      // Equipment slots
+};
+```
+
+Set the type to categorize inventory behavior:
+
+```
+Inventory Type: Standard
+```

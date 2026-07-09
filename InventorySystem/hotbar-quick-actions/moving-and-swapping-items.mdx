@@ -1,0 +1,48 @@
+---
+title: "Moving & Swapping Items"
+description: "Blueprint does the same thing using:"
+---
+
+### Move a Hotbar Slot
+
+Blueprint
+
+```
+Move Hotbar Slot
+   From Index = A
+   To Index   = B
+```
+
+C++
+
+```
+HotbarComponent->MoveHotbarSlot(FromIndex, ToIndex);
+```
+
+---
+
+### Swap with Inventory (C++ Example)
+
+```
+// Take one item from inventory
+FItemInstance InvItem = InventoryComponent->TakeItemAt(InventorySlotIndex, 1);
+
+// Get current hotbar item
+FItemInstance HotbarItem = HotbarComponent->GetItemAtIndex(HotbarSlotIndex);
+
+// Assign inventory item to hotbar
+HotbarComponent->AssignItemToSlot(InvItem, HotbarSlotIndex);
+
+// Put old hotbar item back in inventory
+if (!HotbarItem.IsEmpty())
+{
+    InventoryComponent->AddItemInstance(HotbarItem);
+}
+```
+
+Blueprint does the same thing using:
+
+- `Take Item At` (InventoryComponent)
+- `Get Item At Index` (HotbarComponent)
+- `Assign Item To Slot`
+- `Add Item Instance`

@@ -1,0 +1,44 @@
+---
+title: "Troubleshooting"
+description: "1."
+---
+
+### **"Merchant doesn't buy my items"**
+
+**Check**:
+
+1. `Config.bBuysAnything` or `Config.bHasBuyList` is enabled
+2. If using buy list, item is in `BuyList` array
+3. Proximity check passes
+4. Item is valid (not null)
+
+### **"Prices keep changing"**
+
+**Cause**: Stale quote detection is working correctly.
+
+**Solution**: Get fresh quote right before confirming transaction.
+
+### **"Stock doesn't replenish on sell"**
+
+**Check**:
+
+1. `Config.bHasStock = true` (replenishment only works in finite mode)
+2. `Config.bReplenishOnBuyback = true` OR
+3. `StockItem.ReplenishMode = AlwaysReplenish`
+4. Item exists in `StockItems` array
+
+### **"Merchant state not saving"**
+
+**Check**:
+
+1. Merchant is registered with `USaveSubsystem` (automatic in BeginPlay)
+2. `USaveSubsystem::FlushSaves()` is called (or auto-save is enabled)
+3. Save directory is writable
+
+### **"Players can't interact with merchant"**
+
+**Check**:
+
+1. `Config.MaxInteractionDistance` is sufficient
+2. Player pawn location is valid
+3. Merchant owner actor location is valid

@@ -1,0 +1,54 @@
+---
+title: "Dropping Items"
+description: "Drop an item at a specific location:"
+---
+
+### **Spawn World Item**
+
+Drop an item at a specific location:
+
+**Blueprint**:
+
+```
+[InventoryComponent] → SpawnWorldItem
+   Item Instance: [Item to drop]
+   Location: [World location]
+   Return: Spawned WorldItemActor
+```
+
+**C++**:
+
+```
+FVector DropLocation = PlayerCharacter->GetActorLocation() +
+                       PlayerCharacter->GetActorForwardVector() * 100.0f;
+
+AWorldItemActor* DroppedItem = InventoryComponent->SpawnWorldItem(
+    ItemInstance,
+    DropLocation
+);
+```
+
+### **Drop Item (from slot)**
+
+Drop an item from a specific slot:
+
+**Blueprint**:
+
+```
+[InventoryComponent] → DropItem
+   Index: 5
+   Quantity: 1
+   Drop Location: [World position]
+```
+
+**C++**:
+
+```
+InventoryComponent->DropItem(5, 1, DropLocation);
+```
+
+This automatically:
+
+1. Removes the item from the inventory
+2. Spawns a WorldItemActor
+3. Updates the inventory

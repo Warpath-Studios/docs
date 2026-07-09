@@ -1,0 +1,110 @@
+---
+title: "Rarity System"
+description: "UMI gives you multiple knobs to control rarity:"
+---
+
+UMI gives you multiple knobs to control rarity:
+
+- **Global rarity weights** on the loot table
+- **Per-item rarity overrides** in `FLootEntry`
+- **Level-based tuning** via `ItemLevel` or actor properties
+
+### Global Rarity Weights
+
+Configure in your `LootTable`:
+
+Example:
+
+- `Item.Rarity.Common` → `50.0`
+- `Item.Rarity.Uncommon` → `30.0`
+- `Item.Rarity.Rare` → `15.0`
+- `Item.Rarity.Epic` → `4.0`
+- `Item.Rarity.Legendary` → `1.0`
+
+Weights are relative; you don’t need them to add up to 100.
+
+---
+
+### Item-Level Scaling (Example Pattern)
+
+Higher-level loot sources can favor better rarities.
+
+Example (conceptually):
+
+- **Level 1 Chest:**
+
+  - Common: 60%
+  - Uncommon: 30%
+  - Rare: 10%
+- **Level 10 Chest:**
+
+  - Common: 30%
+  - Uncommon: 35%
+  - Rare: 25%
+  - Epic: 9%
+  - Legendary: 1%
+
+Implementation is **game-specific**. One approach:
+
+Blueprint Example
+
+```
+On Generate Loot (or Post-Process Result)
+   ↓
+Get ItemLevel from LootComponent
+   ↓
+Select rarity weight profile based on level
+   ↓
+Override Global Rarity Weights
+   on the LootTable or via a custom rarity resolver
+```
+
+You can also implement a C++ helper that:
+
+- Takes `ItemLevel`
+- Returns weighted rarity
+- Applies that to each `FLootedItem::RolledRarity`
+
+---
+
+### Per-Item Rarity Override
+
+Force a specific rarity for an entry:
+
+Example entry:
+
+- Item Data: `DA_LegendarySword`
+- Drop Weight: `0.1`
+- Quantity: `1`
+- **Rarity Override:** `Item.Rarity.Legendary`
+
+This sword will always roll as Legendary, regardless of global weights.
+
+---
+
+## Stat Scaling
+
+Rarity and level can drive stat multipliers.
+
+### Stat Scaling Rules (Conceptual)
+
+In the `LootTable`, you can define “stat scaling rules” such as:
+
+- Stat Tag: `Stat.Attack`
+- Rarity Scalars:
+
+  - Common: `1.0`
+  - Uncommon: `1.2`
+  - Rare: `1.5`
+  - Epic: `2.0`
+  - Legendary: `3.0`
+
+Example (for a 10 base Attack sword):
+
+- Common: 10 × 1.0 = **10**
+- Uncommon: 10 × 1.2 = **12**
+- Rare: 10 × 1.5 = **15**
+- Epic: 10 × 2.0 = **20**
+- Legendary: 10 × 3.0 = **30**
+
+> Exactly how you apply those multipliers (GAS effects, item stat struct, etc.) is left flexible on purpose.

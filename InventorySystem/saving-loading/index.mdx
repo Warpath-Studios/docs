@@ -1,0 +1,63 @@
+---
+title: "Saving & Loading"
+description: "The save system features:"
+---
+
+The save system features:
+
+- **Automatic saving**: Configurable autosave intervals
+- **Bucket organization**: Efficient data grouping
+- **Async loading**: Non-blocking load operations
+- **ISaveable interface**: Extensible for custom saveables
+- **Backend extensibility**: Support custom storage backends
+
+---
+
+### **Ultimate Multiplayer EcoSystem Plugin Compatibility**
+
+All other **UM Framework** plugins—including Inventory (UMI), Attributes (UMAS), Skills (UMSS), Quest System, Building System, and any future UM modules—are fully compatible with this save system.
+
+Any UM plugin that uses the `ISaveable` pattern will **automatically register**, save, and load through the `SaveSubsystem` with no extra setup required.
+
+---
+
+## **SaveSubsystem**
+
+### **What Is It?**
+
+`SaveSubsystem` is a World Subsystem that manages all save/load operations for UMI.
+
+**Type**: `UWorldSubsystem`
+
+### **Initialization**
+
+The subsystem initializes automatically when the world loads. No manual setup required.
+
+### **Configuration**
+
+**Blueprint** (GameInstance or GameMode):
+
+```
+[Event BeginPlay]
+   ↓
+[Get Save Subsystem]
+   ↓
+[Set Active Slot]
+   Slot Name: "SaveSlot_001"
+   ↓
+[Update Autosave Interval]
+   Interval: 300  (5 minutes)
+```
+
+**C++**:
+
+```
+void AMyGameMode::BeginPlay()
+{
+    Super::BeginPlay();
+
+    USaveSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<USaveSubsystem>();
+    SaveSubsystem->SetActiveSlot("SaveSlot_001");
+    SaveSubsystem->UpdateAutosaveInterval(300.0f);  // 5 minutes
+}
+```

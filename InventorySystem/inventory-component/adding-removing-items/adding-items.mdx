@@ -1,0 +1,77 @@
+---
+title: "Adding Items"
+description: "The most common method - add items by their ItemDataAsset:"
+---
+
+**By Data Asset**
+
+The most common method - add items by their ItemDataAsset:
+
+**Blueprint**:
+
+```
+[InventoryComponent] → AddItem
+   ItemData: DA_HealthPotion
+   Quantity: 5
+   Return: Success (true/false)
+```
+
+**C++**:
+
+```
+bool bSuccess = InventoryComponent->AddItem(HealthPotionDataAsset, 5);
+if (bSuccess)
+{
+    UE_LOG(LogTemp, Log, TEXT("Added 5 health potions"));
+}
+```
+
+**By Item Instance**
+
+Add a pre-configured item with custom properties:
+
+**Blueprint**:
+
+```
+[Create Item Instance with custom durability/stats]
+   ↓
+[InventoryComponent] → AddItemInstance
+   ItemInstance: [Your custom instance]
+   Return: Success
+```
+
+**C++**:
+
+```
+FItemInstance CustomSword;
+CustomSword.ItemID = "IronSword";
+CustomSword.ItemData = IronSwordDataAsset;
+CustomSword.Quantity = 1;
+CustomSword.Durability = 75.0f;  // 75% durability
+CustomSword.CrafterName = FText::FromString("Thorin");
+
+bool bSuccess = InventoryComponent->AddItemInstance(CustomSword);
+```
+
+**With Overflow Handling**
+
+When adding items that might not fit:
+
+```
+TArray<FItemInstance> Overflow;
+bool bFullyAdded = InventoryComponent->TryAddItemAtSlot(
+    ItemInstance,
+    -1,  // -1 = find any available slot
+    Overflow
+);
+
+if (Overflow.Num() > 0)
+{
+    // Handle items that didn't fit
+    for (const FItemInstance& OverflowItem : Overflow)
+    {
+        // Spawn in world or notify player
+        SpawnWorldItem(OverflowItem);
+    }
+}
+```

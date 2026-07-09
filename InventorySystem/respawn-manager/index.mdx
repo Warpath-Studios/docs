@@ -1,0 +1,153 @@
+---
+title: "Respawn Manager"
+description: "The Respawn Manager is a centralized world subsystem responsible for scheduling and triggering respawn events for actors such as:"
+---
+
+The **Respawn Manager** is a centralized world subsystem responsible for scheduling and triggering respawn events for actors such as:
+
+- Resource nodes (trees, rocks, ore veins)
+- Harvestable actors with LootComponents
+- Interactive foliage
+- Destructible objects that restore over time
+- Any world actor requiring delayed regeneration
+
+The goal is simple:  
+**eliminate per-actor timers** and provide a **scalable, efficient respawn pipeline** for large open worlds and multiplayer games.
+
+UMI and other UM… plugins can register actors with this subsystem to ensure consistent behavior across the entire framework.
+
+---
+
+## **Why Use a Respawn Manager?**
+
+Centralizing respawn logic provides major advantages:
+
+### ✔️ **Performance**
+
+Thousands of resource nodes can exist without each running its own timer.
+
+### ✔️ **Consistency**
+
+Every respawnable object follows a unified lifecycle.
+
+### ✔️ **Plugin Interoperability**
+
+Inventory, Loot System, Foliage System, Crafting Stations, and future systems can all rely on one respawn pipeline.
+
+### ✔️ **Reduced Code Duplication**
+
+You no longer write respawn logic per actor.
+
+### ✔️ **Easy Save/Load Integration**
+
+The subsystem can serialize respawn queues or per-actor timestamps.
+
+---
+
+## **How It Works**
+
+A standard respawn cycle looks like this:
+
+```
+Harvest / Destroy / Use
+        ↓
+Actor marks itself inactive
+        ↓
+Actor registers with Respawn Manager (Delay)
+        ↓
+Respawn Manager counts down asynchronously
+        ↓
+Callback: OnRespawnRequested
+        ↓
+Actor resets internal state & becomes active
+```
+
+Actors themselves do not track time.  
+The subsystem does the scheduling.
+
+---
+
+## **Subsystem Responsibilities**
+
+The Respawn Manager handles:
+
+- Storing respawn requests (actor + delay)
+- Tracking time remaining for each request
+- Validating actors (handles streamed-out or destroyed actors gracefully)
+- Calling the actor back when ready
+- Optional region-based or batched respawns
+- Optional persistence (saving respawn timers)
+
+---
+
+## **Actor Responsibilities**
+
+Actors must:
+
+1. Mark themselves **inactive** immediately after harvest/destruction
+2. Register a respawn request with the manager
+3. Implement a callback to restore their state
+
+This keeps actors lightweight and manager-driven.
+
+---
+
+## **Interfaces & Callbacks**
+
+Respawnable actors usually implement a small interface, for example:
+
+```
+OnRespawnRequested()
+```
+
+or a Blueprint event of the same name.
+
+This keeps the subsystem fully decoupled from actor classes.
+
+---
+
+## **Common Use Cases**
+
+### **Resource Nodes**
+
+Trees, rocks, ore veins reset visually and regenerate loot.
+
+### **Foliage Instances**
+
+Harvested foliage respawns through integration with the FoliageInteractionManager.
+
+### **Chests / Containers**
+
+Single-use or renewable containers regenerate based on cooldown.
+
+### **Traps / World Interactables**
+
+Traps re-arm themselves after a delay.
+
+### **Destructibles**
+
+Walls, crates, barricades rebuild on a timer.
+
+---
+
+## **Related Systems**
+
+The Respawn Manager works alongside:
+
+- **Loot System** (using `LootComponent` + respawn)
+- **Foliage Interaction System** (highlighting, harvesting, respawning)
+- **Inventory System** (loot delivery via respawn nodes)
+- **Save System** (optional: persist respawn timers)
+
+Each system communicates cleanly through interfaces rather than hard dependencies.
+
+---
+
+## **Next Steps**
+
+To continue:
+
+- **Blueprint Integration** → Learn how to register actors and implement callbacks
+- **C++ Integration** → See fully coded examples
+- **Advanced Topics** → Throttling, region-based respawns, streaming worlds
+- **Foliage Integration** → How foliage instances tie into the Respawn Manager

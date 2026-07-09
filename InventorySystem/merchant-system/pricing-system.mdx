@@ -1,0 +1,147 @@
+---
+title: "Pricing System"
+description: "Controls whether items sold by players are added back to merchant stock."
+---
+
+### **Sell Prices (Player Buys from Merchant)**
+
+**Calculation**:
+
+```
+UnitPrice = StockItem.UnitPriceOverride >= 0
+            ? StockItem.UnitPriceOverride
+            : ItemData.ItemValue.BaseBuyValue.Value
+
+Subtotal = UnitPrice * Quantity
+Fee = ceil(Subtotal * (Config.MarketFeePercent / 100))
+Total = Subtotal + Fee
+```
+
+**Example**:
+
+```
+Iron Sword:
+  Base Price: 100 gold
+  Merchant Override: 150 gold
+  Quantity: 2
+  Market Fee: 10%
+
+Calculation:
+  Unit Price = 150 (override)
+  Subtotal = 150 * 2 = 300
+  Fee = ceil(300 * 0.10) = 30
+  Total = 330 gold
+```
+
+### **Buy Prices (Player Sells to Merchant)**
+
+**Calculation**:
+
+```
+BaseValue = ItemData.ItemValue.BaseBuyValue.Value
+
+BuyPercent = StockItem.BuyPriceOverridePercent >= 0
+             ? StockItem.BuyPriceOverridePercent
+             : Config.BuybackPercent
+
+UnitBuyPrice = ceil(BaseValue * (BuyPercent / 100))
+Total = UnitBuyPrice * Quantity
+```
+
+**Example**:
+
+```
+Iron Ore:
+  Base Value: 50 gold
+  Vendor Buyback: 30%
+  Quantity: 10
+
+Calculation:
+  Unit Buy Price = ceil(50 * 0.30) = 15 gold
+  Total = 15 * 10 = 150 gold
+```
+
+---
+
+## **Replenishment System**
+
+Controls whether items sold by players are added back to merchant stock.
+
+### **Configuration Levels**
+
+**1. Vendor-Level Default**
+
+```
+Config.bReplenishOnBuyback = true;  // Sold items restock merchant
+```
+
+**2. Per-Item Override**
+
+```
+StockItem.ReplenishMode = EReplenishMode::NeverReplenish;  // This item never restocks
+```
+
+### **Replenishment Logic**
+
+```
+bool ShouldReplenish(StockItem)
+{
+    switch (StockItem.ReplenishMode)
+    {
+        case AlwaysReplenish:
+            return true;
+
+        case NeverReplenish:
+            return false;
+
+        case UseVendorDefault:
+        default:
+            return Config.bReplenishOnBuyback;
+    }
+}
+
+// On player sell:
+if (ShouldReplenish && Config.bHasStock)
+{
+    StockItem.CurrentStock = min(
+        StockItem.CurrentStock + QtySold,
+        StockItem.MaxStock
+    );
+}
+```
+
+### **Use Cases**
+
+**General Goods Merchant**
+
+```
+Config.bReplenishOnBuyback = true
+// All items: ReplenishMode = UseVendorDefault
+
+// Result: Players can sell items, other players can buy them
+```
+
+**Specialty Shop**
+
+```
+Config.bReplenishOnBuyback = false
+
+// Iron Sword: ReplenishMode = NeverReplenish
+// Health Potion: ReplenishMode = AlwaysReplenish
+
+// Result:
+// - Swords sold by players disappear (economic sink)
+// - Potions sold by players get resold (convenience)
+```
+
+**Recycler/Smelter NPC**
+
+```
+Config.bReplenishOnBuyback = false
+Config.bHasBuyList = true
+BuyList = [Scrap_Metal, Broken_Gear, Ore_Impure]
+
+// All items: ReplenishMode = NeverReplenish
+
+// Result: Acts as item sink for cleanup/economy balance
+```

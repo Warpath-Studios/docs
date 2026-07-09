@@ -1,0 +1,42 @@
+---
+title: "Performance"
+description: "The save system uses per-frame budgets to avoid hitches:"
+---
+
+### **Budgeted Operations**
+
+The save system uses per-frame budgets to avoid hitches:
+
+```
+Max Ops Per Tick: 10
+```
+
+This means max 10 save/load operations per frame, spreading work over multiple frames.
+
+### **Async Loading**
+
+Loading is asynchronous by default:
+
+```
+SaveSubsystem->LoadAllAsync([]()
+{
+    // Callback when complete
+});
+```
+
+This prevents frame rate drops during loading.
+
+---
+
+## **Best Practices**
+
+1. **Use autosave**: Set reasonable intervals (5-10 minutes)
+2. **Mark dirty on changes**: Ensure data is saved
+3. **Persistent GUIDs**: Never regenerate GUIDs
+4. **Organize buckets**: Group related data
+5. **Async loading**: Always load asynchronously
+6. **Test save/load**: Verify data persists correctly
+7. **Version your saves**: Handle format changes gracefully
+8. **Compress large saves**: Reduce disk usage
+9. **Backup saves**: Implement backup system
+10. **Handle corruption**: Validate loaded data

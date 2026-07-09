@@ -1,0 +1,665 @@
+---
+title: "Extending UMI"
+description: "UMI is designed to be extended and customized for your game's specific needs."
+---
+
+UMI is designed to be extended and customized for your game's specific needs. This guide covers extension points and customization strategies.
+
+---
+
+## **Adding Custom Item Fields**
+
+### **Overview**
+
+You may want to add custom properties to items beyond what UMI provides.
+
+### **Method 1: Use Gameplay Tags**
+
+The simplest approach - use gameplay tags for categorization:
+
+**In ItemDataAsset**:
+
+```
+Gameplay Tags:
+   Item.Type.Quest
+   Item.Binding.Soulbound
+   Item.Special.Unique
+   Item.Set.DragonArmor
+```
+
+**Usage**:
+
+```
+bool bIsQuestItem = ItemInstance.ItemData->GameplayTags.HasTag(
+    FGameplayTag::RequestGameplayTag("Item.Type.Quest")
+);
+
+if (bIsQuestItem)
+{
+    // Special handling for quest items
+}
+```
+
+### **Method 2: Use Stat Modifiers**
+
+Store custom data as stats:
+
+```
+FStatModifier CustomField;
+CustomField.StatTag = FGameplayTag::RequestGameplayTag("Custom.BindingLevel");
+CustomField.ModifierType = EStatModifierTypes::Override;
+CustomField.Value = 5.0f;  // Binding level 5
+
+ItemInstance.StatModifiers.Add(CustomField);
+```
+
+**Retrieval**:
+
+```
+float BindingLevel = ItemInstance.GetStatModifier(
+    FGameplayTag::RequestGameplayTag("Custom.BindingLevel")
+);
+```
+
+### **Method 3: Extend FItemInstance**
+
+For complex custom data, extend the struct:
+
+**C++**:
+
+```
+// In your game module
+USTRUCT(BlueprintType)
+struct FMyItemInstance : public FItemInstance
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 CustomLevel;
+
+    UPROPERTY(BlueprintReadWrite)
+    FString CustomData;
+
+    UPROPERTY(BlueprintReadWrite)
+    TArray<FName> CustomArray;
+
+    // Serialization
+    bool Serialize(FArchive& Ar)
+    {
+        FItemInstance::Serialize(Ar);
+        Ar << CustomLevel;
+        Ar << CustomData;
+        Ar << CustomArray;
+        return true;
+    }
+};
+
+template<>
+struct TStructOpsTypeTraits<FMyItemInstance> : public TStructOpsTypeTraitsBase2<FMyItemInstance>
+{
+    enum
+    {
+        WithSerializer = true
+    };
+};
+```
+
+### **Method 4: Data Asset Extension**
+
+Create child class of ItemDataAsset:
+
+```
+UCLASS()
+class UMyItemDataAsset : public UItemDataAsset
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 CustomProperty;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UTexture2D* CustomIcon;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FMyCustomStruct CustomData;
+};
+```
+
+---
+
+## **Creating New Item Types**
+
+### **Example: Spell Scrolls**
+
+**1. Create Data Asset**:
+
+```
+USpellScrollDataAsset : public UItemDataAsset
+   ↓
+   Additional Properties:
+   - SpellAbility (TSubclassOf<UGameplayAbility>)
+   - ManaCost (int32)
+   - SpellLevel (int32)
+   - CastTime (float)
+```
+
+**2. Create Custom Logic**:
+
+```
+void UseSpellScroll(const FItemInstance& ScrollInstance)
+{
+    USpellScrollDataAsset* ScrollData = Cast<USpellScrollDataAsset>(ScrollInstance.ItemData);
+    if (!ScrollData) return;
+
+    // Check mana
+    if (PlayerMana < ScrollData->ManaCost)
+    {
+        ShowNotification("Not enough mana");
+        return;
+    }
+
+    // Activate spell ability
+    ActivateAbility(ScrollData->SpellAbility);
+
+    // Consume scroll
+    InventoryComponent->RemoveItemByID(ScrollInstance.ItemID, 1);
+}
+```
+
+### **Example: Seeds (Plantable Items)**
+
+```
+UCLASS()
+class USeedDataAsset : public UItemDataAsset
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(EditAnywhere)
+    TSubclassOf<AActor> PlantActorClass;  // What grows
+
+    UPROPERTY(EditAnywhere)
+    float GrowthTime;  // Time to mature
+
+    UPROPERTY(EditAnywhere)
+    UItemDataAsset* HarvestResult;  // What you get
+
+    UPROPERTY(EditAnywhere)
+    int32 HarvestYield;
+};
+```
+
+---
+
+## **Overriding Stacking Logic**
+
+### **Custom Stacking Policy**
+
+**1. Add to Enum** (in StackingUtils.h):
+
+```
+UENUM()
+enum class EStackingPolicy : uint8
+{
+    CommodityDecayAware,
+    GearDurabilityBucket,
+    ProvenanceMatters,
+    FullInstance,
+    MyCustomPolicy    // Your new policy
+};
+```
+
+**2. Implement Logic** (in StackingUtils.cpp):
+
+```
+FString UStackingUtils::CalculateStackKey(const FItemInstance& Item)
+{
+    // ... existing logic ...
+
+    if (Policy == EStackingPolicy::MyCustomPolicy)
+    {
+        // Your custom stacking logic
+        FString Key = BaseKey;
+
+        // Example: Stack by moon phase when item was created
+        int32 MoonPhase = CalculateMoonPhase(Item.CreationTime);
+        Key += FString::Printf(TEXT("_Moon%d"), MoonPhase);
+
+        return Key;
+    }
+
+    // ... rest of logic ...
+}
+```
+
+**3. Use in Item**:
+
+```
+ItemDataAsset:
+   Stacking Policy: MyCustomPolicy
+```
+
+---
+
+## **Adding Custom Containers**
+
+### **Container Types**
+
+**1. Simple Storage Container**:
+
+Already provided via `InventoryComponent` on actors.
+
+**2. Filtered Container** (e.g., Weapon Rack):
+
+```
+UCLASS()
+class AWeaponRack : public AActor
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(VisibleAnywhere)
+    UInventoryComponent* WeaponStorage;
+
+    AWeaponRack()
+    {
+        WeaponStorage = CreateDefaultSubobject<UInventoryComponent>(TEXT("WeaponStorage"));
+        WeaponStorage->MaxSlots = 10;
+
+        // Override validation
+        WeaponStorage->OnSlotValidation.BindUObject(this, &AWeaponRack::ValidateWeapon);
+    }
+
+protected:
+    bool ValidateWeapon(const FItemInstance& Item, int32 SlotIndex)
+    {
+        // Only allow weapons
+        return Item.ItemData && Item.ItemData->bIsWeapon;
+    }
+};
+```
+
+**3. Auto-Sorting Container** (e.g., Ore Sorter):
+
+```
+UCLASS()
+class AOreSorter : public AActor
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(VisibleAnywhere)
+    UInventoryComponent* InputInventory;
+
+    UPROPERTY(VisibleAnywhere)
+    UInventoryComponent* IronOutput;
+
+    UPROPERTY(VisibleAnywhere)
+    UInventoryComponent* GoldOutput;
+
+    UPROPERTY(VisibleAnywhere)
+    UInventoryComponent* SilverOutput;
+
+    void ProcessOres()
+    {
+        TArray<FItemInstance> AllItems = InputInventory->GetAllItems();
+
+        for (const FItemInstance& Item : AllItems)
+        {
+            if (Item.ItemID == "IronOre")
+            {
+                IronOutput->AddItemInstance(Item);
+                InputInventory->RemoveItemByID("IronOre", Item.Quantity);
+            }
+            else if (Item.ItemID == "GoldOre")
+            {
+                GoldOutput->AddItemInstance(Item);
+                InputInventory->RemoveItemByID("GoldOre", Item.Quantity);
+            }
+            // ... etc
+        }
+    }
+};
+```
+
+**4. Linked Containers** (e.g., Ender Chest):
+
+```
+UCLASS()
+class AEnderChest : public AActor
+{
+    GENERATED_BODY()
+
+public:
+    // Reference to global shared inventory
+    static UInventoryComponent* GlobalEnderInventory;
+
+    void OnInteract(APlayerController* Player)
+    {
+        if (!GlobalEnderInventory)
+        {
+            // Create shared inventory (persistent)
+            GlobalEnderInventory = NewObject<UInventoryComponent>();
+            GlobalEnderInventory->MaxSlots = 27;
+        }
+
+        // Show shared inventory to player
+        OpenInventoryUI(Player, GlobalEnderInventory);
+    }
+};
+```
+
+---
+
+## **Custom Abilities**
+
+### **Item Usage Abilities**
+
+**1. Create Gameplay Ability**:
+
+```
+UCLASS()
+class UGA_UseHealthPotion : public UGameplayAbility
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(EditAnywhere)
+    float HealAmount = 50.0f;
+
+    virtual void ActivateAbility(...) override
+    {
+        // Get character
+        AMyCharacter* Character = Cast<AMyCharacter>(GetAvatarActorFromActorInfo());
+        if (!Character) return;
+
+        // Heal
+        Character->Health += HealAmount;
+
+        // Play effects
+        PlaySound(HealSound);
+        PlayParticle(HealParticle);
+
+        // Consume item (handled by ConsumableData)
+
+        EndAbility(...);
+    }
+};
+```
+
+**2. Assign to Item**:
+
+```
+ItemDataAsset (Health Potion):
+   Consumable Data:
+      Consumable Ability: GA_UseHealthPotion
+      Auto Consume On Use: true
+```
+
+### **Weapon Abilities**
+
+```
+UCLASS()
+class UGA_SwordAttack : public UGameplayAbility
+{
+    GENERATED_BODY()
+
+public:
+    virtual void ActivateAbility(...) override
+    {
+        // Play attack animation
+        PlayMontage(AttackMontage);
+
+        // Perform damage trace
+        FHitResult HitResult = PerformWeaponTrace();
+
+        if (HitResult.bBlockingHit)
+        {
+            // Apply damage
+            ApplyDamageToTarget(HitResult.GetActor());
+        }
+
+        EndAbility(...);
+    }
+};
+```
+
+---
+
+## **Custom UI**
+
+### **Inventory Widget**
+
+Create your own inventory UI by reading from `InventoryComponent`:
+
+**Blueprint Widget**:
+
+```
+Canvas:
+├── Grid Panel (Inventory Slots)
+│   └── For each slot (0 to MaxSlots):
+│       ├── Item Icon
+│       ├── Quantity Text
+│       ├── Durability Bar
+│       └── Rarity Border
+├── Weight Display
+├── Sort Buttons
+└── Search Box
+```
+
+**Update Logic**:
+
+```
+Event Construct:
+   ↓
+   Bind to OnInventoryChanged
+   ↓
+   Initial UI update
+
+Event On Inventory Changed:
+   ↓
+   For each slot:
+      [Get Item At Index]
+      ↓
+      [Update UI Slot]
+```
+
+### **Equipment Widget**
+
+```
+Equipment Panel:
+├── Helmet Slot
+├── Chest Slot
+├── Legs Slot
+├── Weapon Slot
+└── Stats Display
+
+Event On Equipment Changed:
+   ↓
+   [Update Equipment Slot Visual]
+   ↓
+   [Recalculate Total Stats]
+   ↓
+   [Update Stats Display]
+```
+
+---
+
+## **Performance Optimizations**
+
+### **Object Pooling for World Items**
+
+```
+class AWorldItemPool : public AActor
+{
+    TArray<AWorldItemActor*> PooledItems;
+
+    AWorldItemActor* GetPooledItem()
+    {
+        for (AWorldItemActor* Item : PooledItems)
+        {
+            if (!Item->IsActive())
+            {
+                return Item;  // Reuse
+            }
+        }
+
+        // Create new if pool empty
+        AWorldItemActor* NewItem = GetWorld()->SpawnActor<AWorldItemActor>();
+        PooledItems.Add(NewItem);
+        return NewItem;
+    }
+
+    void ReturnToPool(AWorldItemActor* Item)
+    {
+        Item->SetActorHiddenInGame(true);
+        Item->SetActorEnableCollision(false);
+    }
+};
+```
+
+### **Batch Item Operations**
+
+```
+void AddMultipleItems(TArray<FItemInstance> Items)
+{
+    // Disable events temporarily
+    InventoryComponent->bSuppressEvents = true;
+
+    for (const FItemInstance& Item : Items)
+    {
+        InventoryComponent->AddItemInstance(Item);
+    }
+
+    // Re-enable and fire single event
+    InventoryComponent->bSuppressEvents = false;
+    InventoryComponent->OnInventoryChanged.Broadcast();
+}
+```
+
+### **Async Item Loading**
+
+```
+void LoadItemsAsync(TArray<FSoftObjectPath> ItemPaths)
+{
+    FStreamableManager& StreamableManager = UAssetManager::GetStreamableManager();
+
+    StreamableManager.RequestAsyncLoad(
+        ItemPaths,
+        [this]()
+        {
+            // Items loaded, add to inventory
+            for (const FSoftObjectPath& Path : ItemPaths)
+            {
+                UItemDataAsset* Item = Cast<UItemDataAsset>(Path.ResolveObject());
+                if (Item)
+                {
+                    InventoryComponent->AddItem(Item, 1);
+                }
+            }
+        }
+    );
+}
+```
+
+---
+
+## **Integration Examples**
+
+> **Disclaimer:**  
+> The examples below are **not built-in features of UMI**.  
+> They demonstrate *how you might integrate UMI with other systems* such as quests, achievements, trading, or custom gameplay logic.  
+> These snippets are provided as guidance and should be adapted to your project’s architecture.
+
+### **Quest System Integration**
+
+```
+void OnItemPickedUp(const FItemInstance& Item)
+{
+    // Check quest objectives
+    if (QuestSystem->HasObjective("Collect10IronOre"))
+    {
+        if (Item.ItemID == "IronOre")
+        {
+            QuestSystem->UpdateObjective("Collect10IronOre", Item.Quantity);
+        }
+    }
+}
+```
+
+### **Achievement System**
+
+```
+InventoryComponent->OnInventoryChanged.AddLambda([this]()
+{
+    // Check for achievements
+    if (InventoryComponent->GetItemCount("LegendaryItem") > 0)
+    {
+        AchievementSystem->UnlockAchievement("FirstLegendary");
+    }
+
+    if (InventoryComponent->GetCurrentWeight() >= 1000.0f)
+    {
+        AchievementSystem->UnlockAchievement("PackRat");
+    }
+});
+```
+
+### **Trading System**
+
+```
+void ProposeTrade(APlayerController* OtherPlayer, TArray<FItemInstance> OfferedItems, TArray<FItemInstance> RequestedItems)
+{
+    FTradeProposal Proposal;
+    Proposal.OfferedItems = OfferedItems;
+    Proposal.RequestedItems = RequestedItems;
+    Proposal.OtherPlayer = OtherPlayer;
+
+    // Validate both players have items
+    bool bValid = true;
+    for (const FItemInstance& Item : OfferedItems)
+    {
+        if (InventoryComponent->GetItemCount(Item.ItemID) < Item.Quantity)
+        {
+            bValid = false;
+            break;
+        }
+    }
+
+    if (bValid)
+    {
+        SendTradeProposal(OtherPlayer, Proposal);
+    }
+}
+
+void ExecuteTrade(FTradeProposal Proposal)
+{
+    // Remove offered items
+    for (const FItemInstance& Item : Proposal.OfferedItems)
+    {
+        InventoryComponent->RemoveItemByID(Item.ItemID, Item.Quantity);
+    }
+
+    // Add received items
+    for (const FItemInstance& Item : Proposal.RequestedItems)
+    {
+        InventoryComponent->AddItemInstance(Item);
+    }
+}
+```
+
+---
+
+## **Best Practices for Extensions**
+
+1. **Use interfaces**: Keep extensions modular
+2. **Leverage gameplay tags**: Flexible categorization
+3. **Extend via inheritance**: Don't modify core classes
+4. **Document custom systems**: Help future developers
+5. **Test thoroughly**: Especially save/load functionality
+6. **Maintain compatibility**: Consider UMI updates
+7. **Use events**: React to system changes
+8. **Validate inputs**: Prevent exploits
+9. **Optimize early**: Profile custom code
+10. **Version your extensions**: Track changes

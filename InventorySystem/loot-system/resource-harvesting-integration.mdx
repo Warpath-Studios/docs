@@ -1,0 +1,100 @@
+---
+title: "Resource Harvesting Integration"
+description: "Loot tables are ideal for resources nodes like trees and rocks."
+---
+
+## Resource Harvesting Integration
+
+Loot tables are ideal for **resources nodes** like trees and rocks. Typically you:
+
+- Add a **LootComponent** to the actor (tree/rock/etc.)
+- Assign a `LootTable`
+- Configure whether it is **single-use** or **respawnable**
+- Hook your harvesting logic (e.g., axe hits, mining actions) to trigger loot generation
+
+> Exact harvest trigger is game-specific (e.g., interaction, hit count, tool usage), but the loot **definition** remains data-driven via `LootTable`.
+
+---
+
+### Tree Example
+
+**Actor:** `BP_Tree`
+
+**Components:**
+
+- `StaticMeshComponent` (visual tree)
+- `LootComponent` (handles loot generation)
+
+**LootComponent config:**
+
+- Loot Table: `LT_TreeLoot`
+- Single Use: `false` (tree can be harvested multiple times or until destroyed)
+- Minimum Rarity: `None`
+- Item Level: `1` (can be used if you implement level-based scaling)
+
+**Loot Table:** `LT_TreeLoot`
+
+Loot Entries:
+
+- **[0] Wood Logs**
+
+  - Item Data: `DA_WoodLog`
+  - Drop Weight: `100.0`
+  - Min Quantity: `3`
+  - Max Quantity: `8`
+- **[1] Sticks**
+
+  - Item Data: `DA_Stick`
+  - Drop Weight: `50.0`
+  - Min Quantity: `1`
+  - Max Quantity: `3`
+- **[2] Tree Sap**
+
+  - Item Data: `DA_TreeSap`
+  - Drop Weight: `20.0`
+  - Quantity: `1`
+
+**Max Items To Spawn:** `2`  
+→ Each harvest roll can yield up to 2 distinct item entries (e.g., logs + sap).
+
+---
+
+### Rock Example
+
+**Actor:** `BP_Rock`
+
+**LootComponent config:**
+
+- Loot Table: `LT_RockLoot`
+- Single Use: `true` (rock is destroyed after harvest)
+
+**Loot Table:** `LT_RockLoot`
+
+Loot Entries:
+
+- **[0] Stone**
+
+  - Item Data: `DA_Stone`
+  - Drop Weight: `100.0`
+  - Min Quantity: `5`
+  - Max Quantity: `12`
+- **[1] Iron Ore**
+
+  - Item Data: `DA_IronOre`
+  - Drop Weight: `30.0`
+  - Min Quantity: `1`
+  - Max Quantity: `3`
+- **[2] Gold Ore**
+
+  - Item Data: `DA_GoldOre`
+  - Drop Weight: `5.0`
+  - Quantity: `1`
+  - Rarity Override: `Item.Rarity.Rare`
+
+**Max Items To Spawn:** `2`
+
+**Typical flow:**
+
+1. Player mines the rock (using your interaction / combat logic)
+2. When conditions are met (e.g., HP ≤ 0, harvest threshold reached), you tell the LootComponent to **roll the table and spawn or grant items** (details of that call will be in Part 2 if you have function names there)
+3. If `Single Use = true`, you destroy or replace the rock actor after loot generation

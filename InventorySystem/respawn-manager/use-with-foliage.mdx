@@ -1,0 +1,333 @@
+---
+title: "Use with Foliage"
+description: "The Foliage System and Respawn Manager work together to support:"
+---
+
+The **Foliage System** and **Respawn Manager** work together to support:
+
+- Harvestable foliage that **respawns over time**
+- Performance-friendly handling of **thousands of foliage elements**
+- Consistent behavior between **resource nodes** and **foliage-based harvestables**
+
+The idea is simple:
+
+- The **Foliage System** handles *what* is harvested (instances vs actors, visuals, interaction)
+- The **Respawn Manager** handles *when* a harvested element comes back
+
+This page covers patterns for:
+
+- Instance-based foliage
+- Actor-converted foliage
+- Integration with LootComponent and Inventory
+
+---
+
+## **1. Two Ways to Treat Foliage**
+
+### 1.1 Direct Instance Management (Pure Foliage)
+
+- You harvest foliage by **removing / hiding instances** from an Instanced Static Mesh (ISM/HISM).
+- Respawn Manager stores **“respawn tasks”** tied to:
+
+  - A component reference
+  - Instance index
+  - World position
+
+On respawn:
+
+- Respawn Manager calls back into your Foliage System
+- The system **re-adds** an instance at the same (or slightly randomized) position
+
+### 1.2 Foliage → Actor Conversion (Hybrid)
+
+- On first interaction, you **convert a foliage instance to a “real” actor** (e.g., `BP_HarvestablePlant`).
+- That actor:
+
+  - Handles interaction
+  - Has optional LootComponent
+  - Registers itself with Respawn Manager when harvested
+
+On respawn:
+
+- The actor either:
+
+  - Re-enables itself, or
+  - Notifies the Foliage System to recreate an instance and optionally destroys itself
+
+You can mix both approaches if you want, but pick **one main pattern** for sanity.
+
+---
+
+## **2. Simple Pattern — Actor-Based Foliage Nodes**
+
+This is closest to the resource-node pattern you already have.
+
+### Setup
+
+For each harvestable plant/bush/grass patch:
+
+- Blueprint: `BP_FoliageNode`
+- Components:
+
+  - `StaticMesh` (or SkeletalMesh)
+  - `LootComponent` (optional)
+- Variables:
+
+  - `RespawnTime`
+  - `bHasBeenHarvested`
+
+Implement `BPI_Respawnable` (Blueprint interface) or `IRespawnable` in C++.
+
+---
+
+### On Harvest (Blueprint)
+
+```
+Event OnHarvested
+   ↓
+Branch: bHasBeenHarvested?
+   True → Return
+   False →
+       Set bHasBeenHarvested = true
+       ↓
+       (Optional) LootComponent → Generate Loot
+            → Give items to player
+       ↓
+       Hide Mesh (Set Visibility = false)
+       Disable Collision
+       Disable Interaction
+       ↓
+       Get RespawnManagerSubsystem
+          → Register Respawn Request
+             Target Actor = Self
+             Delay        = RespawnTime
+```
+
+### On Respawn (Blueprint)
+
+```
+Event OnRespawnRequested (from BPI_Respawnable)
+   ↓
+Set bHasBeenHarvested = false
+(Optional) LootComponent → Reset Loot
+Show Mesh
+Enable Collision
+Enable Interaction
+```
+
+This gives you **harvestable foliage actors** that behave just like trees/rocks, but visually they started life as foliage.
+
+---
+
+## **3. Instance-Based Pattern — Respawning HISM Instances**
+
+If you keep foliage as **true instances**, you’ll be working at the component/instance index level.
+
+### Concept
+
+- On harvest:
+
+  - FoliageInteractionManager knows:
+
+    - The `UHierarchicalInstancedStaticMeshComponent*`
+    - The `InstanceIndex`
+    - The `WorldLocation` of that instance
+  - You **remove or hide** the instance
+  - You register a respawn task with Respawn Manager
+- On respawn:
+
+  - Respawn Manager calls back into FoliageInteractionManager
+  - Manager re-adds the instance (possibly with some rule: same spot, random nearby, etc.)
+
+---
+
+### 3.1 Data Needed per Respawn
+
+You need enough info to recreate an instance:
+
+- A reference to the HISM/ISM component (or an ID that can find it)
+- The desired transform (location/rotation/scale)
+- (Optionally) a foliage type or tag
+
+You can store a small struct:
+
+```
+struct FFoliageRespawnEntry
+{
+    TWeakObjectPtr<UHierarchicalInstancedStaticMeshComponent> Component;
+    FTransform Transform;
+    FName FoliageTypeID;
+};
+```
+
+Respawn Manager can store this as payload, or you let FoliageInteractionManager do the heavy lifting and only store an **ID**.
+
+---
+
+### 3.2 On Harvest (C++ Pseudocode)
+
+In `FoliageInteractionManager` or similar:
+
+```
+void UFoliageInteractionManager::HandleFoliageHarvest(
+    UHierarchicalInstancedStaticMeshComponent* HISM,
+    int32 InstanceIndex,
+    APlayerController* Harvester
+)
+{
+    // Get world transform of instance
+    FTransform InstanceTransform;
+    HISM->GetInstanceTransform(InstanceIndex, InstanceTransform, true);
+
+    // Remove or mark hidden
+    HISM->RemoveInstance(InstanceIndex);
+
+    // Optional: generate loot and give to player
+
+    // Build respawn data
+    FFoliageRespawnEntry Entry;
+    Entry.Component = HISM;
+    Entry.Transform = InstanceTransform;
+    Entry.FoliageTypeID = NAME_None; // or any categorization you use
+
+    // Register with Respawn Manager
+    if (URespawnManagerSubsystem* RM = GetWorld()->GetSubsystem<URespawnManagerSubsystem>())
+    {
+        RM->RegisterFoliageRespawn(Entry, RespawnTime);
+    }
+}
+```
+
+---
+
+### 3.3 On Respawn (Manager → Foliage System)
+
+Respawn Manager at some point calls:
+
+```
+void UFoliageInteractionManager::OnFoliageRespawn(const FFoliageRespawnEntry& Entry)
+{
+    if (!Entry.Component.IsValid())
+        return;
+
+    UHierarchicalInstancedStaticMeshComponent* HISM = Entry.Component.Get();
+
+    // Add a new instance
+    HISM->AddInstance(Entry.Transform);
+}
+```
+
+This is all you need for **basic respawning foliage instances**.
+
+---
+
+## **4. Hybrid Pattern — Foliage Instance → Temporary Actor → Respawn**
+
+If you want richer behavior (durability, health, multi-hit harvest, etc.):
+
+1. Player interacts with foliage instance
+2. FoliageInteractionManager:
+
+   - Hides/removes the instance
+   - Spawns a temporary actor (e.g., `BP_ShrubActor`) at that location
+3. The temporary actor:
+
+   - Has `LootComponent` (optional)
+   - Handles hits/harvest logic
+   - Registers with Respawn Manager when fully harvested
+4. On respawn:
+
+   - Either:
+
+     - The actor reparents back to an instance and then destroys itself, **or**
+     - The actor simply re-enables itself (if you don’t care about reverting to pure foliage)
+
+This gives you the **best of both worlds**:
+
+- Cheap instance-based rendering initially
+- Rich interaction once the player gets close
+- Centralized respawn behavior
+
+---
+
+## **5. Integrating Loot and Inventory**
+
+For foliage that drops items:
+
+- Use `LootComponent` on the **actor** version (tree, bush, etc.)
+- On harvest:
+
+  - `LootComponent → GenerateLoot`
+  - Add items to player inventory or spawn `WorldItemActor`s
+- Respawn Manager handles the timing
+- `LootComponent → ResetLoot` on respawn
+
+If you’re working **pure instance-based** without conversion to actor, you can:
+
+- Let FoliageInteractionManager call into a central loot function using `LootTable`
+- Spawn `WorldItemActor`s at the harvest location
+- Still use Respawn Manager purely for regrowing the instance
+
+---
+
+## **6. Multiplayer Considerations**
+
+Same rules as elsewhere:
+
+- **Only the server** should:
+
+  - Remove foliage instances
+  - Register respawn requests
+  - Re-add instances or respawn actors
+- Clients only see:
+
+  - Replicated actors (for actor-converted foliage)
+  - The final mesh appearance (for instances, via normal replication or deterministic regeneration)
+
+Avoid clients trying to run foliage respawn logic.
+
+---
+
+## **7. Performance & Scaling Tips**
+
+- Do **not** create a dedicated actor for every foliage instance in a large forest.  
+  Use instance-based or hybrid patterns instead.
+- If you have **massive** foliage counts:
+
+  - Group respawns by area (region tags, grid cells, etc.)
+  - Optionally spread respawns over time (e.g., max X respawns per frame).
+- Use **simple collision** and minimal tick on temporary actors; they likely don’t need Tick at all.
+
+---
+
+## **8. Recommended Use in Your Framework**
+
+Given your goals:
+
+- Use **Respawn Manager** as the **one and only** scheduling layer.
+- Let **FoliageInteractionManager** focus on:
+
+  - Detecting interactable foliage
+  - Converting instances to actors (when needed)
+  - Feeding loot and respawn requests into the manager
+- Keep **LootComponent** logic consistent between:
+
+  - Trees / rocks / ore nodes
+  - Foliage-based nodes
+
+That way, all resource systems feel unified.
+
+---
+
+## **9. Summary**
+
+- Respawn Manager is not foliage-specific; it’s a **generic respawn pipeline**.
+- Foliage systems integrate by:
+
+  - Either using actor-based nodes
+  - Or managing HISM/ISM instances with respawn entries
+- You decide how fancy you want the foliage interaction to be:
+
+  - Simple instance re-addition
+  - Hybrid conversion to full actors
+  - Full loot + durability behavior

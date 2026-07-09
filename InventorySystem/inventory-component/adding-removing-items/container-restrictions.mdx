@@ -1,0 +1,103 @@
+---
+title: "Container Restrictions"
+description: "You can restrict which items can be placed in specific containers or slots using Gameplay Tags."
+---
+
+### **Overview**
+
+You can restrict which items can be placed in specific containers or slots using **Gameplay Tags**.
+
+### **Use Cases**
+
+- **Weapon-only slots**: Only allow weapons
+- **Potion belt**: Only allow consumables
+- **Quiver**: Only allow arrows
+- **Reagent bag**: Only allow crafting materials
+- **Armor stands**: Only allow armor pieces
+
+### **Per-Container Restrictions**
+
+Use `CanItemGoInContainer()` to validate items:
+
+**C++**:
+
+```
+bool bCanAdd = InventoryComponent->CanItemGoInContainer(ItemInstance);
+```
+
+Override in Blueprint to implement custom logic:
+
+```
+Event Can Item Go In Container
+   Item Instance: [Input]
+   ↓
+   [Check item tags]
+   ↓
+   Return: true/false
+```
+
+### **Per-Slot Restrictions**
+
+Configure restrictions for individual slots using `FContainerSlotSettings`:
+
+```
+struct FContainerSlotSettings
+{
+    bool bRestrictSlot;                     // Enable restrictions
+    FGameplayTagQuery RestrictionQuery;     // Tag query filter
+    TArray<FName> EnabledItems;             // Whitelist
+    TArray<FName> DisabledItems;            // Blacklist
+};
+```
+
+**Example: Weapon-Only Slot**
+
+**Blueprint** (in InventoryComponent):
+
+```
+Slot Settings:
+   [0]:
+      Restrict Slot: true
+      Restriction Query: Has Tag "Item.Category.Weapon"
+      Enabled Items: []
+      Disabled Items: []
+```
+
+**Example: Whitelist Specific Items**
+
+```
+Slot Settings:
+   [0]:
+      Restrict Slot: true
+      Restriction Query: None
+      Enabled Items: [HealthPotion, ManaPotion, StaminaPotion]
+      Disabled Items: []
+```
+
+Only those three specific items can go in this slot.
+
+**Example: Blacklist Quest Items**
+
+```
+Slot Settings:
+   [All Slots]:
+      Restrict Slot: true
+      Restriction Query: Not Has Tag "Item.Category.Quest"
+      Enabled Items: []
+      Disabled Items: [QuestItem_SpecialKey]
+```
+
+Quest items cannot be placed here.
+
+### **Validation**
+
+Before adding an item:
+
+```
+bool bCanAdd = InventoryComponent->CanItemGoInSlot(ItemInstance, SlotIndex);
+if (!bCanAdd)
+{
+    // Show error message
+    ShowNotification("This item cannot be placed here");
+}
+```

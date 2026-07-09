@@ -1,0 +1,109 @@
+---
+title: "Equipping & Unequipping Items"
+description: "Before using equipment, initialize the component with inventories:"
+---
+
+### **Initialization**
+
+Before using equipment, initialize the component with inventories:
+
+**Blueprint**:
+
+```
+[Event BeginPlay]
+   ↓
+[EquipmentComponent] → InitializeEquipment
+   Main Inventory: [PlayerInventory]
+   Equipment Inventory: [EquipmentInventory]
+   Base Mesh:           [Mesh (main body)]
+```
+
+![44eba8ecfbb16126da60a6815d558369.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2Fdf2e18aa-7e3d-4ba4-854f-e57901775c28%2Fimages%2F44eba8ecfbb16126da60a6815d558369-df845dc8-df0b-4c69-993d-431b6018313c.png "44eba8ecfbb16126da60a6815d558369.png")
+
+**C++**:
+
+```
+void AMyCharacter::BeginPlay()
+{
+    Super::BeginPlay();
+
+    EquipmentComponent->InitializeEquipment(
+        EquipmentInventoryComponent,   // Equipment inventory (holds equipped items)
+        MainInventoryComponent,        // Main inventory (receives unequipped items)
+        GetMesh()                      // Base character mesh (for body-part hiding)
+    );
+}
+```
+
+### **Equip Item**
+
+**Blueprint**:
+
+```
+[EquipmentComponent] → EquipItemToSlot
+   Item Instance: [Item to equip]
+   Slot Index: 0  // Helmet slot
+   Return: Success
+```
+
+![2d729915e13777333cd3f35702a56088.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2Fdf2e18aa-7e3d-4ba4-854f-e57901775c28%2Fimages%2F2d729915e13777333cd3f35702a56088-cae0b419-a18d-4357-9932-cdd1efa0c260.png "2d729915e13777333cd3f35702a56088.png")
+
+**C++**:
+
+```
+bool bSuccess = EquipmentComponent->EquipItemToSlot(ItemInstance, SlotIndex);
+if (bSuccess)
+{
+    UE_LOG(LogTemp, Log, TEXT("Equipped item to slot %d"), SlotIndex);
+}
+```
+
+**What Happens**:
+
+1. Validates item can go in slot (checks RequiredTag)
+2. Unequips current item in slot (if any)
+3. Places new item in equipment slot
+4. Updates visual mesh
+5. Activates equip ability (if any)
+6. Fires `OnEquipmentChanged` event
+
+### **Unequip Item**
+
+**Blueprint**:
+
+```
+[EquipmentComponent] → UnequipItemFromSlot
+   Slot Index: 0
+   Return: Success
+```
+
+**C++**:
+
+```
+bool bSuccess = EquipmentComponent->UnequipItemFromSlot(SlotIndex);
+```
+
+**What Happens**:
+
+1. Removes item from slot
+2. Clears visual mesh
+3. Restores hidden body parts
+4. Activates unequip ability (if any)
+5. Returns item to main inventory
+6. Fires `OnEquipmentChanged` event
+
+### **Unequip All**
+
+**Blueprint**:
+
+```
+[EquipmentComponent] → UnequipAllItems
+```
+
+![a8937311408e3c35950141031ac701a4.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2Fdf2e18aa-7e3d-4ba4-854f-e57901775c28%2Fimages%2Fa8937311408e3c35950141031ac701a4-029385f3-73ad-4319-b051-476485450fb0.png "a8937311408e3c35950141031ac701a4.png")
+
+**C++**:
+
+```
+EquipmentComponent->UnequipAllItems();
+```

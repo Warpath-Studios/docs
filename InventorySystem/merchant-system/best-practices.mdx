@@ -1,0 +1,126 @@
+---
+title: "Best Practices"
+description: "Best Practices reference for the Inventory System plugin."
+---
+
+### **1. Stock Configuration**
+
+**Do**:
+
+```
+// Consumables: High stock, low value
+Health Potion: MaxStock = 50, Price = 10
+
+// Equipment: Low stock, high value
+Legendary Sword: MaxStock = 1, Price = 5000
+
+// Infinite vendor for basic supplies
+Config.bHasStock = false  // Tutorial merchant
+```
+
+**Don't**:
+
+```
+// Don't set MaxStock too low for consumables
+Health Potion: MaxStock = 2  // Players will get frustrated
+
+// Don't make everything infinite
+Config.bHasStock = false  // Removes sense of scarcity
+```
+
+### **2. Pricing**
+
+**Do**:
+
+```
+// Use market fees for taxes/economy sinks
+Config.MarketFeePercent = 5.0  // 5% transaction tax
+
+// Use buyback % to prevent exploit loops
+Config.BuybackPercent = 40.0  // Buy at 40%, sell at 100%
+
+// Override prices for special items
+RareGem: UnitPriceOverride = 999.0  // Premium pricing
+```
+
+**Don't**:
+
+```
+// Don't allow 100% buyback (exploit)
+Config.BuybackPercent = 100.0  // Buy/sell loop for free money!
+
+// Don't make fees too high
+Config.MarketFeePercent = 50.0  // Players will avoid vendor
+```
+
+### **3. Replenishment**
+
+**Do**:
+
+```
+// General goods: Enable replenishment
+Config.bReplenishOnBuyback = true
+
+// Economy sinks: Disable for trash items
+Broken_Gear: ReplenishMode = NeverReplenish
+
+// Mixed strategy: Override per item
+Valuable_Ore: ReplenishMode = AlwaysReplenish
+Vendor_Trash: ReplenishMode = NeverReplenish
+```
+
+**Don't**:
+
+```
+// Don't replenish quest items
+Quest_Token: ReplenishMode = AlwaysReplenish  // Breaks quest flow
+
+// Don't sink everything
+Config.bReplenishOnBuyback = false  // Players can't trade with each other
+```
+
+### **4. Buy Lists**
+
+**Do**:
+
+```
+// Themed merchants
+Blacksmith: BuyList = [Ore, Metal, Broken_Weapons]
+Alchemist: BuyList = [Herbs, Reagents, Potions]
+Fence: BuyList = [Stolen_Goods, Contraband]
+
+// Use BuysAnything for general stores
+Config.bBuysAnything = true  // Convenience merchant
+```
+
+**Don't**:
+
+```
+// Don't mix conflicting settings
+Config.bBuysAnything = true
+Config.bHasBuyList = true  // BuyList is ignored!
+
+// Don't leave BuyList empty with bHasBuyList
+Config.bHasBuyList = true
+BuyList = []  // Merchant won't buy anything
+```
+
+### **5. Admin Operations**
+
+**Do**:
+
+```
+// Daily restock via cron
+UMerchantSubsystem* MerchantSys = World->GetSubsystem<UMerchantSubsystem>();
+int32 Restocked = MerchantSys->RestockAllMerchants();
+
+// Quest-triggered restock
+SpecificMerchant->RestockNow();
+```
+
+**Don't**:
+
+```
+// Don't expose RestockNow to players
+// It's admin-only for a reason
+```

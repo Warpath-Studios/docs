@@ -1,0 +1,56 @@
+---
+title: "Auto-Refill System"
+description: "The hotbar can “remember” what was assigned to each slot:"
+---
+
+### How It Works
+
+The hotbar can “remember” what was assigned to each slot:
+
+1. Assign an item to a hotbar slot
+2. The item’s **ItemID** is stored as this slot’s *sticky* ID
+3. Use or drop all items until the slot is empty
+4. The slot stays empty, but the sticky ID remains
+5. When you later obtain that item again (via pickup, crafting, etc.), the hotbar:
+
+   - Refills that empty slot first
+   - Sends any remaining items to the main inventory
+
+This keeps the hotbar layout stable even as items are consumed.
+
+### Configuration
+
+**Enable/disable auto-refill:**
+
+- Blueprint: set `Auto Refill Enabled` on `HotbarComponent`
+- C++: `HotbarComponent->bAutoRefillEnabled = true;`
+
+**Manual refill:**
+
+```
+HotbarComponent->TryAutoFillFromInventory(SlotIndex);
+```
+
+**Check if a slot is waiting for refill:**
+
+```
+bool bWaiting = HotbarComponent->IsWaitingForRefill(SlotIndex);
+```
+
+**Clear sticky memory:**
+
+```
+HotbarComponent->ClearStickyID(SlotIndex);
+```
+
+C++
+
+```
+HotbarComponent->bAutoRefillEnabled = true;
+
+HotbarComponent->TryAutoFillFromInventory(SlotIndex);
+
+bool bWaiting = HotbarComponent->IsWaitingForRefill(SlotIndex);
+
+HotbarComponent->ClearStickyID(SlotIndex);
+```

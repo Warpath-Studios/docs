@@ -1,0 +1,173 @@
+---
+title: "Item Definitions"
+description: "is a Data Asset that defines everything about an item type."
+---
+
+`UItemDataAsset` is a **Data Asset** that defines everything about an item type. Think of it as the "blueprint" or "template" for items.
+
+### **Anatomy of an Item Data Asset**
+
+**Basic Information**
+
+```
+Item ID: WoodenSword             // Unique identifier
+Display Name: "Wooden Sword"      // Shown to player
+Description: "A basic sword..."   // Tooltip text
+Flavor Text: "Every hero..."      // Lore text
+Item Rarity: Item.Rarity.Common   // Quality tier
+Weight: 2.5                       // Weight in kg
+```
+
+- **Item ID**: Unique FName used by code
+- **Display Name**: Localized text shown in UI
+- **Description**: Functional description of the item
+- **Flavor Text**: Optional lore/story text
+- **Item Rarity**: Gameplay tag defining quality (Common, Rare, Epic, etc.)
+- **Weight**: Used for encumbrance calculations
+
+**Stacking Configuration**
+
+```
+Max Stack Size: 1                 // How many per stack
+Stacking Policy: FullInstance     // How stacking works
+Bucket Width Percentage: 20       // Policy granularity
+Include Rarity In Stack Key: false
+```
+
+See [Stacking Rules](https://github.com/AlleyKilla/InventorySystem/blob/claude/setup-wiki-documentation-01BiWDAT5DC6zum2q7h5G41e/Wiki/03-Core-Concepts.md#stacking-rules) for detailed explanation.
+
+**Equipment Properties**
+
+```
+Is Equipable: true
+Equipment Slot Tag: Equipment.Slot.MainHand
+Compatible Slot Tags: [Equipment.Slot.MainHand, Equipment.Slot.OffHand]
+Equipment Type Tag: Equipment.Type.OneHanded
+
+// Visual
+Equipment Mesh Variants:
+   Default: SK_Sword
+   Male: SK_Sword_Male
+   Female: SK_Sword_Female
+
+Equipment Material Overrides:
+   Item.Rarity.Rare: M_Sword_Blue
+   Item.Rarity.Epic: M_Sword_Purple
+
+Attachment Socket: hand_r
+Equipment Transform Offset: (X=0, Y=0, Z=0)
+
+// Body Part Hiding
+Hides Body Parts: false
+Body Parts To Hide: []
+```
+
+- **Is Equipable**: Can this be equipped?
+- **Equipment Slot Tag**: Primary slot for this item
+- **Compatible Slot Tags**: All slots this can fit in (e.g., ring in either ring slot)
+- **Equipment Type Tag**: Categorization (OneHanded, TwoHanded, Shield, etc.)
+- **Mesh Variants**: Different meshes for different character types
+- **Material Overrides**: Different materials based on rarity
+- **Attachment Socket**: Socket name on skeleton to attach to
+- **Transform Offset**: Fine-tune position/rotation
+- **Body Part Hiding**: Hide character parts when equipped (e.g., hide hair under helmet)
+
+**Weapon Properties**
+
+```
+Is Weapon: true
+Weapon Tag: Weapon.Sword
+Weapon Actor Class: BP_SwordActor
+Equip Ability: GA_EquipWeapon
+Unequip Ability: GA_UnequipWeapon
+```
+
+- **Is Weapon**: Marks this as a weapon
+- **Weapon Tag**: Weapon classification
+- **Weapon Actor Class**: Spawned actor when equipped
+- **Equip/Unequip Ability**: Gameplay abilities triggered on equip/unequip
+
+**Consumable Properties**
+
+```
+Is Consumable: true
+Consumable Data:
+   Auto Consume On Use: true
+   Drop On Remaining Quantity: false
+   Consumable Ability: GA_UseHealthPotion
+```
+
+- **Is Consumable**: Can be consumed
+- **Auto Consume On Use**: Automatically reduce quantity
+- **Drop On Remaining Quantity**: Drop if some remain after use
+- **Consumable Ability**: Gameplay ability activated on use
+
+**Stats & Value**
+
+```
+Item Stats:
+   Fixed Stats:
+      [0]: Stat.Attack | Value: 10
+      [1]: Stat.Durability | Value: 100
+   Rolled Stat Rules:
+      [0]: Stat.CritChance | Min: 5.0 | Max: 15.0
+
+Item Value:
+   Base Value: 50.0
+   Sell Value: 25.0
+   Vendor Type: Vendor.Blacksmith
+
+Max Durability: 100.0
+Can Decay: true
+Decay Rate: 0.1 (per second)
+```
+
+- **Fixed Stats**: Always the same (e.g., sword always has 10 attack)
+- **Rolled Stat Rules**: Random within range (e.g., crit chance between 5-15%)
+- **Item Value**: Buy and sell prices
+- **Durability**: Maximum durability
+- **Decay**: Deterioration over time
+
+**Visual & Audio**
+
+```
+Static Meshes: [SM_Sword]
+Skeletal Meshes: [SK_Sword]
+Item Offset: (X=0, Y=0, Z=0, Pitch=0, Yaw=0, Roll=0)
+
+Icon: T_Sword_Icon
+Full Size Icon: T_Sword_Large
+
+Sounds:
+   Equip: SFX_Equip_Sword
+   Use: SFX_Sword_Swing
+   Drop: SFX_Drop_Metal
+```
+
+- **Static/Skeletal Meshes**: 3D representation
+- **Item Offset**: Adjust position when held/equipped
+- **Icon**: Small icon for inventory (64x64 or 128x128)
+- **Full Size Icon**: Large icon for inspection
+- **Sounds**: Audio for various actions
+
+**Ability System**
+
+```
+Active Ability: GA_PrimaryAttack
+Passive Ability: GA_SwordMastery
+Remove Ability: GA_SwordMastery
+Action Set: ActionSet_Sword
+```
+
+- **Active Ability**: Triggered on use
+- **Passive Ability**: Always active when equipped
+- **Remove Ability**: Removed when unequipped
+- **Action Set**: Defines primary action behavior
+
+### **Creating Item Data Assets**
+
+1. **Content Browser** → Right-click → **Miscellaneous > Data Asset**
+2. Choose **ItemDataAsset** as the class
+3. Name it with a prefix (e.g., `DA_HealthPotion`, `DA_IronSword`)
+4. Configure all relevant properties
+5. **Save**

@@ -1,0 +1,177 @@
+---
+title: "Changelog"
+description: "- Fully replicated multiplayer inventory system - Stackable items with and unique item support - Weight/encumbrance system with customizable rules - Equip/"
+---
+
+### v1.0.0 **Core Features**
+
+- Fully replicated multiplayer inventory system
+- Stackable items with `FItemInstance` and unique item support
+- Weight/encumbrance system with customizable rules
+- Equip/Unequip pipeline with equipment slots
+- Hotbar & quick-action item usage system
+- Loot tables + loot component + drop generation
+- World item actors with pickup logic
+- Decay system with spoilage & item degradation
+- Save system integration (`ISaveable`, `SaveSubsystem`)
+- Interaction system support (pickup, containers, harvesting)
+- Drag-and-drop Inventory UI widget set
+- Gameplay Ability System (GAS) item ability integration hooks
+- Full Blueprint and C++ API exposed
+- Asset Manager category support for items & loot tables
+
+---
+
+## **v1.1.0 — Hotbar Expansion & UI Improvements**
+
+### 🚀 **New**
+
+- Added **Hotbar cooldown system** (per-slot cooldown tracking)
+- Added support for **auto-refill sticky hotbar slots**
+- Added **scroll-to-cycle hotbar slot** (mouse wheel integration)
+- Added **hotbar selection events** for UI updates
+
+### 🛠 **Improvements**
+
+- Updated hotbar API for easier Blueprint use
+- Improved drag-and-drop responsiveness
+- Added safety checks for invalid slot access
+- Improved icon visibility rules for empty & stacked items
+
+### 🧹 **Fixes**
+
+- Fixed issue where hotbar cooldowns weren’t replicated properly
+- Fixed ghost-slot issue when dragging items from destroyed containers
+
+---
+
+## **v1.2.0 — Loot System Overhaul**
+
+### 🚀 **New**
+
+- Added **Global Rarity Weights** to loot tables
+- Added **item-level scaling** for dynamic stat scaling
+- Added **per-item rarity overrides**
+- Added **Stat Scaling Rules** to loot tables
+- Added **maximum items-to-spawn** to loot tables
+- Added **FLootResult** struct for cleaner drop generation
+
+### 🛠 **Improvements**
+
+- Simplified drop weight math for easier balancing
+- Improved debug logging when generating loot
+- Resource nodes now support single-use OR respawnable mode
+
+### 🧹 **Fixes**
+
+- Fixed issue where loot tables with fixed quantity entries ignored Min/Max
+- Fixed crash if a loot table contains null ItemData
+- Fixed occasional replication race when spawning world items
+
+---
+
+## **v1.3.0 — Respawn Manager Integration**
+
+### 🚀 **New**
+
+- Added **URespawnManagerSubsystem**
+- Added support for **respawnable world actors** (trees, rocks, chests, etc.)
+- Added **register/unregister API** for respawnables
+- Added **respawn event callbacks**
+
+### 🛠 **Improvements**
+
+- Integrated Respawn Manager with Loot System for renewable resources
+- Improved resource node Blueprint examples
+- Cleaned up respawn timing logic to ensure stable multiplayer behavior
+
+### 🧹 **Fixes**
+
+- Fixed actors sometimes respawning twice after server travel
+- Fixed loot component not resetting properly on respawn
+
+---
+
+## **v1.4.0 — Interaction System Upgrade**
+
+### 🚀 **New**
+
+- Added **FInteractionOption** support for custom interactions
+- Added tool requirement support (`RequiredTools` per interaction)
+- Added hold-interaction progress tracking
+- Added line-of-sight & distance validation per interaction option
+
+### 🛠 **Improvements**
+
+- Foliage interaction UX improved (sphere/capsule tracing)
+- Better debug messages for incorrect setup
+- Simplified adding interaction options in Blueprint
+
+### 🧹 **Fixes**
+
+- Fixed interaction prompts disappearing in rare cases
+- Fixed issue where InteractionComponent could trace the player’s own mesh
+
+---
+
+## **v1.5.0 — Save System Enhancements**
+
+### 🚀 **New**
+
+- Added **FItemRecord → FItemInstance** serialization helpers
+- Added example **custom saveable containers** (Blueprint & C++)
+- Added auto-registration for world items with SaveSubsystem
+
+### 🛠 **Improvements**
+
+- Faster save serialization through pooled memory writers
+- Cleaned up replication→save execution order
+- Added error logging for items missing valid Item IDs
+
+### 🧹 **Fixes**
+
+- Fixed issue where items inside containers weren’t always serialized
+- Fixed corrupt saves from negative quantities (design-time mistake)
+
+---
+
+## **v1.6.0 — UI/UX Updates**
+
+### 🚀 **New**
+
+- Added nameplates, rarity coloring & quantity overlays
+- Added built-in cooldown radial widget
+- Added optional “sticky slot indicator” for refilling hotbar slots
+
+### 🛠 **Improvements**
+
+- Better default inventory grid layout
+- Improved mobile/touch drag-and-drop support
+- Added support for UI scaling in 1080p → 4K resolutions
+
+### 🧹 **Fixes**
+
+- Fixed blurry icons on certain DPI scales
+- Fixed selection/highlight layering issues
+
+---
+
+## **v1.7.0 — GAS Enhancements**
+
+### 🚀 **New**
+
+- Added standardized item-use → ability activation path
+- Added override hook `GetAbilitySpecForItem()`
+- Added tag-driven ability activation on hotbar usage
+
+### 🛠 **Improvements**
+
+- Simplified integration with AbilitySystemComponent
+- Supported cooldown propagation back to the Hotbar system
+
+### 🧹 **Fixes**
+
+- Fixed ability activation on clients with high latency
+- Fixed missing replication of ability-granted effects in some cases
+
+## **v1.8.0 —** Initial Marketplace Release

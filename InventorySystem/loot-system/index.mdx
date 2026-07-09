@@ -1,0 +1,26 @@
+---
+title: "Loot System"
+description: "The Loot System generates random item drops from containers, enemies, foliage, and resource nodes using configurable loot tables."
+---
+
+The **Loot System** generates random item drops from containers, enemies, foliage, and resource nodes using configurable loot tables.
+
+**Headers:**  
+`/Public/Items/LootTable.h`  
+`/Public/Inventory/Components/LootComponent.h`
+
+---
+
+## Overview
+
+UMI’s loot system provides:
+
+- **Weighted loot tables** for probability-based drops
+- **Rarity filtering** and optional level-based scaling
+- **Quantity ranges** for variable stack sizes
+- **Single-use or respawnable** containers / nodes
+- **Integration with world actors and components** (trees, rocks, chests, enemies)
+
+Loot generation is **data-driven** via `LootTable` assets and `LootComponent` configuration.
+
+> 🔗 Make sure `LootTable` is registered in the **Asset Manager** (see *Asset Manager Configuration*).

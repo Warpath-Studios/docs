@@ -1,0 +1,72 @@
+---
+title: "Loading"
+description: "Load all saved data asynchronously:"
+---
+
+### **Load All (Async)**
+
+Load all saved data asynchronously:
+
+**Blueprint**:
+
+```
+[Get Save Subsystem]
+   ↓
+[Load All Async]
+   ↓
+[Wait for completion]
+   ↓
+[OnComplete]
+   ↓
+   [Spawn player with loaded data]
+```
+
+**C++**:
+
+```
+void AMyGameMode::LoadGame()
+{
+    USaveSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<USaveSubsystem>();
+
+    SaveSubsystem->LoadAllAsync([this]()
+    {
+        // Load complete
+        SpawnPlayerWithSavedData();
+    });
+}
+```
+
+### **Load on Player Spawn**
+
+Typical pattern:
+
+```
+void AMyGameMode::PostLogin(APlayerController* NewPlayer)
+{
+    Super::PostLogin(NewPlayer);
+
+    // Get player's profile component
+    AMyCharacter* Character = Cast<AMyCharacter>(NewPlayer->GetPawn());
+    if (Character && Character->PlayerProfileComponent)
+    {
+        // Load saved data
+        USaveSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<USaveSubsystem>();
+
+        FSaveRecord Record = SaveSubsystem->LoadRecord(
+            Character->PlayerProfileComponent->GetSaveGuid(),
+            Character->PlayerProfileComponent->GetSaveBucket()
+        );
+
+        if (Record.Bytes.Num() > 0)
+        {
+            // Apply saved data
+            Character->PlayerProfileComponent->ApplySaveRecord(Record);
+        }
+        else
+        {
+            // New player, give starting items
+            GiveStartingItems(Character);
+        }
+    }
+}
+```

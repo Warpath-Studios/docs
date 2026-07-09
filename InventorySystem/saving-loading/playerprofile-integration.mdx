@@ -1,0 +1,42 @@
+---
+title: "PlayerProfile Integration"
+description: "implements and automatically saves:"
+---
+
+### **PlayerProfileComponent**
+
+`PlayerProfileComponent` implements `ISaveable` and automatically saves:
+
+- Player inventory
+- Equipment
+- Hotbar
+- Crafting state
+- Profile data
+
+### **Player GUID**
+
+Each player has a persistent GUID:
+
+```
+UPROPERTY(SaveGame)
+FGuid PlayerGuid;
+```
+
+### **Auto-Registration**
+
+`PlayerProfileComponent` automatically registers with SaveSubsystem on BeginPlay:
+
+```
+void UPlayerProfileComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    if (!PlayerGuid.IsValid())
+    {
+        PlayerGuid = FGuid::NewGuid();
+    }
+
+    USaveSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<USaveSubsystem>();
+    SaveSubsystem->RegisterSaveable(this);
+}
+```

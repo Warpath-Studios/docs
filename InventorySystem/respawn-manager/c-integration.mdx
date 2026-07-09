@@ -1,0 +1,386 @@
+---
+title: "C++ Integration"
+description: "This page covers how to implement respawnable actors using C++ with the ."
+---
+
+This page covers how to implement respawnable actors using C++ with the `URespawnManagerSubsystem`.  
+It includes full examples, best practices, and recommended patterns for resource nodes, foliage conversion, enemies, and custom gameplay actors.
+
+---
+
+# **1. Accessing the Respawn Manager (C++)**
+
+The Respawn Manager is a **World Subsystem**, so you can access it from any Actor:
+
+```
+URespawnManagerSubsystem* RespawnManager =
+    GetWorld()->GetSubsystem<URespawnManagerSubsystem>();
+```
+
+Check for `nullptr` if needed:
+
+```
+if (!RespawnManager) return;
+```
+
+---
+
+# **2. Registering a Respawn Request**
+
+Once an actor is harvested, disabled, or visually removed, register it for respawn:
+
+```
+RespawnManager->RegisterRespawnRequest(this, RespawnTime);
+```
+
+### **Full Example**
+
+```
+void AResourceNode::StartRespawnCountdown()
+{
+    if (URespawnManagerSubsystem* RespawnManager = GetWorld()->GetSubsystem<URespawnManagerSubsystem>())
+    {
+        RespawnManager->RegisterRespawnRequest(this, RespawnTime);
+    }
+}
+```
+
+This schedules the actor to receive a respawn callback after the delay has elapsed.
+
+---
+
+# **3. Implementing Respawn Callbacks**
+
+There are **two ways** to implement the callback in C++:
+
+---
+
+## **Option A — Implement** `IRespawnable` **Interface (Recommended)**
+
+### **Header**
+
+```
+UCLASS()
+class YOURGAME_API AResourceNode : public AActor, public IRespawnable
+{
+    GENERATED_BODY()
+
+public:
+    virtual void OnRespawnRequested() override;
+
+protected:
+    bool bHarvested = false;
+};
+```
+
+### **Source**
+
+```
+void AResourceNode::OnRespawnRequested()
+{
+    bHarvested = false;
+
+    // Restore appearance
+    MeshComp->SetVisibility(true);
+    MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+    // Reset loot if applicable
+    if (LootComponent)
+    {
+        LootComponent->ResetLoot();
+    }
+}
+```
+
+The subsystem will automatically call your override.
+
+---
+
+## **Option B — Supply a Custom Callback via Function Pointer**
+
+If you don’t want to use the interface:
+
+```
+RespawnManager->RegisterRespawnRequestWithFunction(
+    this,
+    RespawnTime,
+    FName("Respawn") // function must exist on actor
+);
+```
+
+Custom function:
+
+```
+void AResourceNode::Respawn()
+{
+    // Re-enable visuals / logic
+}
+```
+
+The interface method is still recommended for consistency.
+
+---
+
+# **4. Full Resource Node Example**
+
+Below is a complete resource node implementation including harvesting, disabling, and respawning.
+
+---
+
+## **ResourceNode.h**
+
+```
+UCLASS()
+class YOURGAME_API AResourceNode : public AActor, public IRespawnable
+{
+    GENERATED_BODY()
+
+public:
+    AResourceNode();
+
+    // IRespawnable interface
+    virtual void OnRespawnRequested() override;
+
+    void OnHarvested(APlayerController* Harvester);
+
+protected:
+    UPROPERTY(VisibleAnywhere)
+    UStaticMeshComponent* MeshComp;
+
+    UPROPERTY(VisibleAnywhere)
+    ULootComponent* LootComponent;
+
+    UPROPERTY(EditAnywhere, Category="Respawn")
+    float RespawnTime = 300.0f;
+
+    bool bHarvested = false;
+};
+```
+
+---
+
+## **ResourceNode.cpp**
+
+```
+AResourceNode::AResourceNode()
+{
+    MeshComp = CreateDefaultSubobject<UStaticMeshComponent>("MeshComp");
+    RootComponent = MeshComp;
+
+    LootComponent = CreateDefaultSubobject<ULootComponent>("LootComponent");
+}
+
+void AResourceNode::OnHarvested(APlayerController* Harvester)
+{
+    if (bHarvested) return;
+
+    bHarvested = true;
+
+    // Generate loot
+    if (LootComponent)
+    {
+        FLootResult Loot = LootComponent->GenerateLoot();
+        // Give items to player here…
+    }
+
+    // Disable visuals and collision
+    MeshComp->SetVisibility(false);
+    MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    // Register respawn request
+    if (URespawnManagerSubsystem* RM = GetWorld()->GetSubsystem<URespawnManagerSubsystem>())
+    {
+        RM->RegisterRespawnRequest(this, RespawnTime);
+    }
+}
+
+void AResourceNode::OnRespawnRequested()
+{
+    bHarvested = false;
+
+    // Reset loot table
+    if (LootComponent)
+    {
+        LootComponent->ResetLoot();
+    }
+
+    // Re-enable actor
+    MeshComp->SetVisibility(true);
+    MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+```
+
+---
+
+# **5. Respawn Manager + LootComponent Example**
+
+If you attach a `ULootComponent`, the recommended pattern is:
+
+### On Harvest:
+
+```
+FLootResult Loot = LootComponent->GenerateLoot();
+GiveLootToPlayer(Loot);
+LootComponent->OnHarvested(); // optional cleanup
+HideAndDisable();
+RespawnManager->RegisterRespawnRequest(this, RespawnTime);
+```
+
+### On Respawn:
+
+```
+LootComponent->ResetLoot();
+ShowAndEnable();
+```
+
+The Respawn Manager does the timing.
+
+---
+
+# **6. Integration with Foliage Interaction (C++)**
+
+For foliage converted to temporary actors:
+
+### On Harvest:
+
+```
+MeshComp->SetVisibility(false);
+MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+RespawnManager->RegisterRespawnRequest(this, RespawnTime);
+```
+
+### On Respawn:
+
+```
+MeshComp->SetVisibility(true);
+MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+ReAddToFoliageInteractionSystem(); // if needed
+```
+
+---
+
+# **7. Respawning Enemies or AI**
+
+If enemies should respawn at spawn points:
+
+```
+void AEnemySpawner::StartEnemyRespawn(AActor* DeadEnemy)
+{
+    URespawnManagerSubsystem* RM = GetWorld()->GetSubsystem<URespawnManagerSubsystem>();
+    RM->RegisterRespawnRequest(this, RespawnDelay);
+}
+```
+
+Then implement:
+
+```
+void AEnemySpawner::OnRespawnRequested()
+{
+    SpawnEnemy();
+}
+```
+
+Or use the interface.
+
+---
+
+# **8. Advanced — Custom Respawn Requests**
+
+### Register a request where the **target actor is different from callback actor**:
+
+```
+RespawnManager->RegisterRespawnRequestFor(
+    TargetActorToRespawn,
+    CallbackActor,
+    RespawnTime
+);
+```
+
+Useful for:
+
+- Crop regrowth
+- Trap resetting
+- Multi-actor puzzle resets
+- Group respawn triggers
+
+---
+
+# **9. Advanced — Serialization & SaveSystem Integration**
+
+Respawn Manager uses **GUIDs** to ensure actors continue their respawn schedule across saves.
+
+If you want custom save behavior in C++:
+
+```
+virtual FGuid GetRespawnGuid() const override { return MyCustomGuid; }
+virtual void InitializeGuidIfNeeded() override { /* assign new Guid */ }
+```
+
+This allows complete override of timing persistence.
+
+---
+
+# **10. Best Practices (C++)**
+
+| Practice | Benefit |
+| --- | --- |
+| Implement `IRespawnable` | Cleanest and safest integration |
+| Hide + disable actor when harvested | Prevents player interaction or blocking |
+| Keep respawn logic simple | Reduces errors during async callbacks |
+| Reset loot inside `OnRespawnRequested` | Ensures fresh rolls |
+| Use component pointers instead of finds | Best performance |
+| Don’t use timers yourself | Avoids duplication; subsystem handles timing |
+| Use GUID override only if needed | Subsystem already generates GUIDs |
+
+---
+
+# **11. Full Minimal Example (Copy-Paste Ready)**
+
+### **Header**
+
+```
+UCLASS()
+class YOURGAME_API ARespawnableRock : public AActor, public IRespawnable
+{
+    GENERATED_BODY()
+
+public:
+    virtual void OnRespawnRequested() override;
+    void Harvest(APlayerController* PC);
+
+protected:
+    UPROPERTY(EditAnywhere)
+    float RespawnTime = 120.0f;
+
+    UPROPERTY(VisibleAnywhere)
+    UStaticMeshComponent* Mesh;
+
+    bool bHarvested = false;
+};
+```
+
+### **Source**
+
+```
+void ARespawnableRock::Harvest(APlayerController* PC)
+{
+    if (bHarvested) return;
+
+    bHarvested = true;
+    Mesh->SetVisibility(false);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    if (URespawnManagerSubsystem* RM = GetWorld()->GetSubsystem<URespawnManagerSubsystem>())
+    {
+        RM->RegisterRespawnRequest(this, RespawnTime);
+    }
+}
+
+void ARespawnableRock::OnRespawnRequested()
+{
+    bHarvested = false;
+    Mesh->SetVisibility(true);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+```

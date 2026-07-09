@@ -1,0 +1,36 @@
+---
+title: "Cooldown Management"
+description: "You can convert these to a 0–1 progress value and drive a radial or bar overlay in your UI."
+---
+
+### Setting & Querying Cooldowns
+
+C++
+
+```
+HotbarComponent->SetSlotCooldown(SlotIndex, CooldownDuration);
+
+float Remaining = HotbarComponent->GetSlotCooldownRemaining(SlotIndex);
+float Total     = HotbarComponent->GetSlotCooldownTime(SlotIndex);
+
+float Progress = (Total > 0.f)
+    ? 1.0f - (Remaining / Total)
+    : 1.0f;
+```
+
+Blueprint
+
+Nodes:
+
+- `Set Slot Cooldown`
+- `Get Slot Cooldown Remaining`
+- `Get Slot Cooldown Time`
+
+You can convert these to a **0–1 progress** value and drive a radial or bar overlay in your UI.
+
+### Enabling Cooldown Ticking
+
+Call once (BP or C++):
+
+- Blueprint: `Start Cooldown Ticking`
+- C++: `HotbarComponent->StartCooldownTicking();`

@@ -1,0 +1,790 @@
+---
+title: "Troubleshooting & FAQ"
+description: "Common issues and their solutions when working with UMI."
+---
+
+Common issues and their solutions when working with UMI.
+
+---
+
+## **Replication Issues**
+
+### **Items Not Appearing on Clients**
+
+**Symptoms**:
+
+- Items added on server show in server player's inventory
+- Items don't appear for clients
+- Client inventory UI is empty or outdated
+
+**Causes**:
+
+1. Component not set to replicate
+2. Items array not replicated
+3. Events not firing on clients
+
+**Solutions**:
+
+**Check Component Replication**:
+
+```
+// In your setup
+InventoryComponent->SetIsReplicated(true);
+```
+
+**Verify Array Replication**:
+
+```
+// InventoryComponent.h should have:
+UPROPERTY(ReplicatedUsing=OnRep_Items)
+TArray<FInventorySlot> Items;
+```
+
+**Implement OnRep Function**:
+
+```
+UFUNCTION()
+void OnRep_Items()
+{
+    OnInventoryChanged.Broadcast();
+}
+```
+
+**Check Network Role**:
+
+```
+if (GetOwnerRole() == ROLE_Authority)
+{
+    // Server only
+    InventoryComponent->AddItem(ItemData, Quantity);
+}
+```
+
+### **Desynced Inventory Between Server and Client**
+
+**Symptoms**:
+
+- Server shows different items than client
+- Quantity mismatches
+- Items disappear randomly
+
+**Causes**:
+
+1. Client prediction without server validation
+2. Client modifying inventory directly
+3. Missed replication updates
+
+**Solutions**:
+
+**Always Use Server Authority**:
+
+```
+// Wrong - don't do this
+void AddItemClientSide()
+{
+    InventoryComponent->AddItem(ItemData, 1);  // Client calls directly
+}
+
+// Correct
+UFUNCTION(Server, Reliable)
+void Server_AddItem(UItemDataAsset* ItemData, int32 Quantity)
+{
+    if (GetLocalRole() == ROLE_Authority)
+    {
+        InventoryComponent->AddItem(ItemData, Quantity);
+    }
+}
+```
+
+**Validate on Server**:
+
+```
+bool AddItemWithValidation(UItemDataAsset* ItemData, int32 Quantity)
+{
+    if (GetLocalRole() != ROLE_Authority)
+    {
+        Server_AddItem(ItemData, Quantity);
+        return false;  // Don't know result yet
+    }
+
+    // Server validates
+    if (!InventoryComponent->CanAddItemWeight(ItemData, Quantity))
+    {
+        return false;
+    }
+
+    return InventoryComponent->AddItem(ItemData, Quantity);
+}
+```
+
+---
+
+## **Items Not Appearing**
+
+### **Items Added But Not Visible in UI**
+
+**Symptoms**:
+
+- AddItem returns true
+- GetItemCount shows correct count
+- UI doesn't display items
+
+**Causes**:
+
+1. UI not bound to inventory events
+2. UI not refreshing
+3. Slots initialized incorrectly
+
+**Solutions**:
+
+**Bind to Events**:
+
+```
+// In your widget
+void UInventoryWidget::NativeConstruct()
+{
+    Super::NativeConstruct();
+
+    if (InventoryComponent)
+    {
+        InventoryComponent->OnInventoryChanged.AddDynamic(this, &UInventoryWidget::RefreshInventory);
+        InventoryComponent->OnSlotUpdated.AddDynamic(this, &UInventoryWidget::UpdateSlot);
+
+        RefreshInventory();  // Initial population
+    }
+}
+```
+
+**Force Refresh**:
+
+```
+void RefreshInventory()
+{
+    for (int32 i = 0; i < InventoryComponent->MaxSlots; i++)
+    {
+        FItemInstance Item = InventoryComponent->GetItemAtIndex(i);
+        UpdateSlotVisual(i, Item);
+    }
+}
+```
+
+### **WorldItemActor Not Pickable**
+
+**Symptoms**:
+
+- World item visible
+- Interaction prompt doesn't appear
+- Can't pick up item
+
+**Causes**:
+
+1. InteractionComponent not tracing correctly
+2. Item outside trace range
+3. Item not implementing interaction interface
+4. Collision not set up
+
+**Solutions**:
+
+**Check Trace Settings**:
+
+```
+InteractionComponent->TraceDistance = 500.0f;  // Increase range
+InteractionComponent->bDrawDebugTrace = true;  // Visualize
+```
+
+**Verify Collision**:
+
+```
+// On WorldItemActor mesh
+MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+MeshComponent->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+MeshComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+```
+
+**Check Interaction Setup**:
+
+```
+// WorldItemActor should have interaction option
+FInteractionOption PickupOption;
+PickupOption.Tag = FGameplayTag::RequestGameplayTag("Interaction.Pickup");
+PickupOption.PromptText = FText::FromString("Press E to Pick Up");
+PickupOption.Range = 300.0f;
+```
+
+---
+
+## **Stacking Problems**
+
+### **Items Not Stacking When They Should**
+
+**Symptoms**:
+
+- Same items occupy multiple slots
+- Items with same ID don't merge
+
+**Causes**:
+
+1. Different stacking policies
+2. Rarity included in stack key
+3. Different durability buckets
+4. Different crafters (ProvenanceMatters)
+
+**Solutions**:
+
+**Check Stacking Policy**:
+
+```
+ItemDataAsset:
+   Stacking Policy: CommodityDecayAware  (not FullInstance)
+   Include Rarity In Stack Key: false
+```
+
+**Debug Stack Keys**:
+
+```
+FString Key1 = UStackingUtils::CalculateStackKey(Item1);
+FString Key2 = UStackingUtils::CalculateStackKey(Item2);
+
+UE_LOG(LogTemp, Log, TEXT("Item1 Key: %s"), *Key1);
+UE_LOG(LogTemp, Log, TEXT("Item2 Key: %s"), *Key2);
+
+if (Key1 == Key2)
+{
+    UE_LOG(LogTemp, Log, TEXT("Should stack"));
+}
+```
+
+**Force Stacking**:
+
+```
+// Merge two stacks manually
+FItemInstance Item1 = InventoryComponent->GetItemAtIndex(Slot1);
+FItemInstance Item2 = InventoryComponent->GetItemAtIndex(Slot2);
+
+if (Item1.ItemID == Item2.ItemID)
+{
+    int32 TotalQuantity = Item1.Quantity + Item2.Quantity;
+    int32 MaxStack = Item1.ItemData->MaxStackSize;
+
+    if (TotalQuantity <= MaxStack)
+    {
+        Item1.Quantity = TotalQuantity;
+        InventoryComponent->UpdateSlot(Slot1, Item1);
+        InventoryComponent->ClearSlot(Slot2);
+    }
+}
+```
+
+### **Items Stacking When They Shouldn't**
+
+**Symptoms**:
+
+- Items with different properties merge
+- Unique items stack together
+- Durability values merge incorrectly
+
+**Causes**:
+
+1. Wrong stacking policy
+2. Custom properties not included in stack key
+
+**Solutions**:
+
+**Use Correct Policy**:
+
+```
+Unique Items:
+   Stacking Policy: FullInstance
+   Max Stack Size: 1
+
+Equipment:
+   Stacking Policy: GearDurabilityBucket
+   Bucket Width Percentage: 25
+
+Crafted Items:
+   Stacking Policy: ProvenanceMatters
+```
+
+**Custom Stack Key**: Extend stacking logic to include your custom properties (see [Extending the System](/warpath-studios/umf/extending-umi-gfhyofw3db-uw1e5t6on9a0)).
+
+---
+
+## **Loot Not Spawning**
+
+### **LootComponent Generates Empty Results**
+
+**Symptoms**:
+
+- GenerateLoot returns empty array
+- No items drop from enemies/containers
+
+**Causes**:
+
+1. Empty loot table
+2. All drop weights = 0
+3. MaxItemsToSpawn = 0
+4. Level filtering too strict
+
+**Solutions**:
+
+**Verify Loot Table**:
+
+```
+Loot Table:
+   Loot Entries: [Must have at least one entry]
+   Max Items To Spawn: 1 or more
+```
+
+**Check Weights**:
+
+```
+Loot Entry:
+   Drop Weight: 50.0  (not 0)
+```
+
+**Debug Loot Generation**:
+
+```
+FLootResult Result = LootComponent->GenerateLoot();
+
+UE_LOG(LogTemp, Log, TEXT("Loot generated: %d items"), Result.SpawnedItems.Num());
+
+for (const FLootedItem& Item : Result.SpawnedItems)
+{
+    UE_LOG(LogTemp, Log, TEXT("  - %s x%d"), *Item.ItemData->ItemID.ToString(), Item.Quantity);
+}
+```
+
+### **Loot Spawns But Items Invisible**
+
+**Symptoms**:
+
+- Loot generates correctly (logs show items)
+- WorldItemActors not visible
+
+**Causes**:
+
+1. Mesh not set
+2. Spawned underground
+3. Culled by visibility
+
+**Solutions**:
+
+**Initialize Properly**:
+
+```
+AWorldItemActor* DroppedItem = GetWorld()->SpawnActor<AWorldItemActor>(
+    WorldItemActorClass,
+    SpawnLocation + FVector(0, 0, 50),  // Spawn slightly above ground
+    FRotator::ZeroRotator
+);
+
+DroppedItem->InitializeFromInstance(LootedItem);
+
+// Verify mesh
+if (DroppedItem->MeshComponent)
+{
+    UE_LOG(LogTemp, Log, TEXT("Mesh set: %s"), *DroppedItem->MeshComponent->GetStaticMesh()->GetName());
+}
+```
+
+---
+
+## **UI Not Updating**
+
+### **Inventory Changes Don't Reflect in UI**
+
+**Symptoms**:
+
+- Items added/removed
+- UI shows old data
+- Need to close/reopen UI to see changes
+
+**Causes**:
+
+1. Events not bound
+2. Events not firing
+3. UI caching old data
+
+**Solutions**:
+
+**Rebind Events**:
+
+```
+void UInventoryWidget::NativeConstruct()
+{
+    Super::NativeConstruct();
+
+    // Clear old bindings
+    if (InventoryComponent)
+    {
+        InventoryComponent->OnInventoryChanged.RemoveAll(this);
+        InventoryComponent->OnSlotUpdated.RemoveAll(this);
+    }
+
+    // Bind events
+    InventoryComponent->OnInventoryChanged.AddDynamic(this, &UInventoryWidget::RefreshInventory);
+    InventoryComponent->OnSlotUpdated.AddDynamic(this, &UInventoryWidget::UpdateSlot);
+
+    RefreshInventory();
+}
+```
+
+**Manual Refresh**:
+
+```
+// After any inventory change
+InventoryComponent->OnInventoryChanged.Broadcast();
+```
+
+### **Equipment Visuals Not Updating**
+
+**Symptoms**:
+
+- Item equipped successfully
+- Character mesh doesn't change
+- Old equipment still visible
+
+**Causes**:
+
+1. Mesh components not set up
+2. Master Pose not configured
+3. Meshes not assigned in ItemDataAsset
+
+**Solutions**:
+
+**Verify Mesh Setup**:
+
+```
+// Equipment meshes should use Master Pose
+HeadMeshComponent->SetMasterPoseComponent(GetMesh());  // Main character mesh
+ChestMeshComponent->SetMasterPoseComponent(GetMesh());
+```
+
+**Force Visual Update**:
+
+```
+EquipmentComponent->UpdateAllEquipmentVisuals();
+```
+
+**Check ItemDataAsset**:
+
+```
+Equipment Mesh Variants:
+   Default: SK_Helmet  (must be set)
+```
+
+---
+
+## **Crafting Issues**
+
+### **Can't Start Crafting**
+
+**Symptoms**:
+
+- StartCrafting returns false
+- No error message
+- Recipe appears valid
+
+**Causes**:
+
+1. Missing ingredients
+2. Missing tools
+3. No fuel (if required)
+4. All slots busy (MultiSlot mode)
+
+**Solutions**:
+
+**Debug Validation**:
+
+```
+if (!CraftingComponent->CanStartCrafting(Recipe, Quantity))
+{
+    if (!CraftingComponent->HasRequiredIngredients(Recipe))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Missing ingredients"));
+    }
+
+    if (!CraftingComponent->HasRequiredTools(Recipe))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Missing tools"));
+    }
+
+    if (CraftingComponent->bRequiresFuel && !CraftingComponent->HasSufficientFuel())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Missing fuel"));
+    }
+
+    int32 EmptySlot = CraftingComponent->FindEmptySlot();
+    if (EmptySlot == -1)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("All slots busy"));
+    }
+}
+```
+
+### **Crafting Progress Stuck**
+
+**Symptoms**:
+
+- Crafting starts
+- Progress doesn't increase
+- Never completes
+
+**Causes**:
+
+1. Tick not running
+2. Crafting paused
+3. Time dilation = 0
+
+**Solutions**:
+
+**Check Tick**:
+
+```
+// CraftingComponent should tick
+PrimaryComponentTick.bCanEverTick = true;
+PrimaryComponentTick.bStartWithTickEnabled = true;
+```
+
+**Resume if Paused**:
+
+```
+if (CraftingSlot.bIsPaused)
+{
+    CraftingComponent->ResumeCrafting(SlotIndex);
+}
+```
+
+---
+
+## **Save/Load Issues**
+
+### **Data Not Persisting**
+
+**Symptoms**:
+
+- Items lost on reload
+- Inventory resets to default
+- Equipment not saved
+
+**Causes**:
+
+1. Component not registered as saveable
+2. GUID not persistent
+3. Save not being called
+4. Wrong bucket
+
+**Solutions**:
+
+**Register Component**:
+
+```
+void BeginPlay()
+{
+    Super::BeginPlay();
+
+    USaveSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<USaveSubsystem>();
+    if (SaveSubsystem)
+    {
+        SaveSubsystem->RegisterSaveable(this);
+    }
+}
+```
+
+**Use Persistent GUID**:
+
+```
+UPROPERTY(SaveGame)
+FGuid ComponentGuid;
+
+void BeginPlay()
+{
+    if (!ComponentGuid.IsValid())
+    {
+        ComponentGuid = FGuid::NewGuid();
+    }
+}
+
+FGuid GetSaveGuid() const override
+{
+    return ComponentGuid;  // Same GUID every time
+}
+```
+
+**Trigger Save**:
+
+```
+// Mark dirty when data changes
+InventoryComponent->OnInventoryChanged.AddLambda([this]()
+{
+    USaveSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<USaveSubsystem>();
+    SaveSubsystem->MarkDirty(this);
+});
+
+// Or manual save
+SaveSubsystem->FlushSaves();
+```
+
+### **Corrupted Save Data**
+
+**Symptoms**:
+
+- Load fails
+- Crash on load
+- Partial data loaded
+
+**Causes**:
+
+1. Serialization mismatch
+2. Version change
+3. Corrupted file
+
+**Solutions**:
+
+**Version Your Saves**:
+
+```
+const int32 SAVE_VERSION = 2;
+
+FSaveRecord BuildSaveRecord() override
+{
+    FSaveRecord Record;
+    FMemoryWriter Writer(Record.Bytes);
+
+    // Write version first
+    int32 Version = SAVE_VERSION;
+    Writer << Version;
+
+    // Write data
+    Writer << MyData;
+
+    return Record;
+}
+
+void ApplySaveRecord(const FSaveRecord& Record) override
+{
+    FMemoryReader Reader(Record.Bytes);
+
+    // Read version
+    int32 Version;
+    Reader << Version;
+
+    if (Version != SAVE_VERSION)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Save version mismatch. Expected %d, got %d"), SAVE_VERSION, Version);
+        return;
+    }
+
+    // Read data
+    Reader << MyData;
+}
+```
+
+---
+
+## **Performance Issues**
+
+### **Frame Rate Drops When Opening Inventory**
+
+**Causes**:
+
+1. Too many UI updates
+2. Inefficient refresh logic
+3. Large inventory size
+
+**Solutions**:
+
+**Batch Updates**:
+
+```
+void RefreshInventory()
+{
+    // Disable tick during refresh
+    SetComponentTickEnabled(false);
+
+    for (int32 i = 0; i < MaxSlots; i++)
+    {
+        UpdateSlotVisual(i);
+    }
+
+    SetComponentTickEnabled(true);
+}
+```
+
+**Virtualization**:
+
+```
+// Only create widgets for visible slots
+void ScrollToSlot(int32 SlotIndex)
+{
+    int32 StartSlot = SlotIndex - VisibleSlots / 2;
+    int32 EndSlot = SlotIndex + VisibleSlots / 2;
+
+    for (int32 i = StartSlot; i <= EndSlot; i++)
+    {
+        if (!SlotWidgets.Contains(i))
+        {
+            CreateSlotWidget(i);
+        }
+    }
+}
+```
+
+### **Multiplayer Lag**
+
+**Causes**:
+
+1. Too much replication
+2. Frequent updates
+3. Large inventory sizes
+
+**Solutions**:
+
+**Reduce Replication Frequency**:
+
+```
+InventoryComponent->SetNetUpdateFrequency(10.0f);  // 10 updates per second max
+```
+
+**Replicate Only Changes**:
+
+```
+// Use RepNotify to update only changed slots
+UFUNCTION()
+void OnRep_Inventory(const TArray<FInventorySlot>& OldInventory)
+{
+    // Compare and update only changed slots
+    for (int32 i = 0; i < Items.Num(); i++)
+    {
+        if (i >= OldInventory.Num() || Items[i] != OldInventory[i])
+        {
+            OnSlotUpdated.Broadcast(i, Items[i].Item);
+        }
+    }
+}
+```
+
+---
+
+## **Common Questions**
+
+### **Q: Can I use UMI in multiplayer?**
+
+**A**: Yes! UMI is designed for multiplayer with full replication support.
+
+### **Q: Does UMI support dedicated servers?**
+
+**A**: Yes, all components work on dedicated servers with server authority.
+
+### **Q: Can I modify UMI source code?**
+
+**A**: Yes, but extending via inheritance is recommended for easier updates.
+
+### **Q: Does UMI work with the Gameplay Ability System (GAS)?**
+
+**A:** Yes. UMI fully supports GAS and includes optional hooks so items can trigger Gameplay Abilities, apply Gameplay Effects, or integrate with GAS-driven stats if your project uses it.
+
+### **Q: Does UMI require GAS?**
+
+**A:** No. GAS integration is **optional**. UMI works entirely without GAS, and all inventory, equipment, crafting, and loot functionality operates normally even if GAS is disabled.

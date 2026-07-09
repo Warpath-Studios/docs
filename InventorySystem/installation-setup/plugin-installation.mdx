@@ -1,0 +1,53 @@
+---
+title: "Plugin Installation"
+description: "1."
+---
+
+### **Method 1: Plugin Installation (Recommended)**
+
+1. **Download or clone** the UMI plugin to your project's `Plugins` folder:
+
+   ```
+   YourProject/
+   └── Plugins/
+       └── UMI/
+           ├── Source/
+           ├── Content/
+           └── UMI.uplugin
+   ```
+2. **Regenerate project files**:
+
+   - Right-click your `.uproject` file
+   - Select "Generate Visual Studio project files"
+3. **Open your project** in Unreal Engine
+4. **Enable the plugin**:
+
+   - Go to **Edit > Plugins**
+   - Search for "Ultimate Multiplayer Inventory" or "UMI"
+   - Check the "Enabled" checkbox
+   - Restart the editor when prompted
+5. **Verify installation**:
+
+   - Open the **Content Browser**
+   - Enable "Show Plugin Content" in the View Options
+   - Look for the "UMI Content" folder
+
+### **Method 2: Engine Plugin Installation**
+
+For engine-wide availability:
+
+1. Copy the UMI plugin to your Engine's Plugins folder:
+
+   ```
+   UnrealEngine/Engine/Plugins/UMI/
+   ```
+2. Restart the engine and enable the plugin in your project
+
+### **Building from Source**
+
+If you need to modify the C++ code:
+
+1. Ensure you have **Visual Studio 2019 or 2022** installed with C++ development tools
+2. Open your project's `.sln` file in Visual Studio
+3. Build the project in **Development Editor** configuration
+4. Launch the editor from Visual Studio or the `.uproject` file

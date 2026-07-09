@@ -1,0 +1,164 @@
+---
+title: "Stacking & Rules"
+description: "UMI's stacking system is sophisticated, allowing different items to stack differently based on their properties and use case."
+---
+
+UMI's stacking system is sophisticated, allowing different items to stack differently based on their properties and use case.
+
+### **Stacking Policies**
+
+**1. CommodityDecayAware**
+
+**Use Case**: Food, perishables, items that decay over time
+
+**How It Works**:
+
+- Groups items into "freshness buckets" based on durability/age
+- Bucket width controls granularity
+
+**Example** (20% buckets):
+
+- Bucket 1: 100% - 81% fresh → Stack together
+- Bucket 2: 80% - 61% fresh → Stack together
+- Bucket 3: 60% - 41% fresh → Stack together
+- Bucket 4: 40% - 21% fresh → Stack together
+- Bucket 5: 20% - 0% fresh → Stack together
+
+**Configuration**:
+
+```
+Stacking Policy: CommodityDecayAware
+Bucket Width Percentage: 20
+Max Stack Size: 50
+```
+
+**Result**: You can have multiple stacks of the same food at different freshness levels.
+
+**2. GearDurabilityBucket**
+
+**Use Case**: Equipment, tools, weapons with durability
+
+**How It Works**:
+
+- Similar to CommodityDecayAware but for gear
+- Groups by durability percentage
+
+**Example** (25% buckets):
+
+- 100% - 76%: Pristine gear stacks together
+- 75% - 51%: Good condition stacks together
+- 50% - 26%: Worn gear stacks together
+- 25% - 1%: Damaged gear stacks together
+
+**Configuration**:
+
+```
+Stacking Policy: GearDurabilityBucket
+Bucket Width Percentage: 25
+Max Stack Size: 10
+```
+
+**Result**: Fresh swords stack separately from damaged swords.
+
+**3. ProvenanceMatters**
+
+**Use Case**: Crafted items where the crafter matters
+
+**How It Works**:
+
+- Includes crafter name in stack key
+- Items from different crafters don't stack
+
+**Example**:
+
+- "Iron Sword crafted by Thorin" (5 items)
+- "Iron Sword crafted by Elena" (3 items)
+- These occupy separate stacks even though they're the same item
+
+**Configuration**:
+
+```
+Stacking Policy: ProvenanceMatters
+Max Stack Size: 20
+```
+
+**Result**: Player-crafted items maintain their creator's identity.
+
+**4. FullInstance**
+
+**Use Case**: Unique items, quest items, items with unique properties
+
+**How It Works**:
+
+- Each item is completely unique
+- Never stacks with anything
+
+**Example**:
+
+- Legendary weapons
+- Quest items
+- Items with random enchantments
+
+**Configuration**:
+
+```
+Stacking Policy: FullInstance
+Max Stack Size: 1
+```
+
+**Result**: Each item occupies its own inventory slot.
+
+### **Stack Keys**
+
+Stack keys determine if two items can merge. Items with identical stack keys will stack together (up to MaxStackSize).
+
+**Stack Key Composition**:
+
+- Item ID
+- Item Data reference
+- Rarity (if `bIncludeRarityInStackKey` is true)
+- Policy-specific data:
+
+  - CommodityDecayAware: Freshness bucket
+  - GearDurabilityBucket: Durability bucket
+  - ProvenanceMatters: Crafter name
+  - FullInstance: Unique instance ID
+
+### **Choosing the Right Policy**
+
+| **Item Type** | **Recommended Policy** | **Why** |
+| --- | --- | --- |
+| Food | CommodityDecayAware | Track freshness |
+| Potions | CommodityDecayAware | Simple commodities |
+| Ore/Resources | ProvenanceMatters or Commodity | Stack easily |
+| Weapons | GearDurabilityBucket | Separate worn from new |
+| Armor | GearDurabilityBucket | Track condition |
+| Unique Gear | FullInstance | Never stack |
+| Quest Items | FullInstance | One-of-a-kind |
+| Ammo | CommodityDecayAware | Simple stacking |
+
+### **Rarity and Stacking**
+
+By default, items of different rarities **will stack together** unless you enable `bIncludeRarityInStackKey`.
+
+**Example**:
+
+```
+bIncludeRarityInStackKey: false
+→ Common Iron Sword + Rare Iron Sword = Stack together
+
+bIncludeRarityInStackKey: true
+→ Common Iron Sword and Rare Iron Sword = Separate stacks
+```
+
+**When to enable**:
+
+- When rarity significantly changes the item
+- When you want players to easily identify item quality
+- For loot-heavy games with many rarity tiers
+
+**When to disable**:
+
+- When rarity is cosmetic only
+- When you want items to stack regardless of quality
+- For simple games with limited rarity impact

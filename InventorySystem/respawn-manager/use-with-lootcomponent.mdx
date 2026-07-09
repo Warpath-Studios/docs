@@ -1,0 +1,426 @@
+---
+title: "Use with LootComponent"
+description: "The Loot System and Respawn Manager are designed to work together:"
+---
+
+The **Loot System** and **Respawn Manager** are designed to work together:
+
+- **Loot System** decides *what* drops
+- **Respawn Manager** decides *when* the source comes back
+
+This page shows how to connect:
+
+- `LootTable` + `LootComponent` (UMI)
+- `RespawnManagerSubsystem` (Respawn Manager)
+
+…to create renewable:
+
+- Resource nodes (trees, rocks, ore veins)
+- Harvestable world objects (plants, mushrooms, bushes)
+- Chests/containers that refill over time
+
+> Enemies are usually **single-use loot + separate enemy spawn/respawn logic**. We’ll touch on that pattern at the end.
+
+---
+
+## **1. High-Level Pattern**
+
+For any loot source you want to respawn:
+
+```
+Harvest/Interact
+   ↓
+Generate loot via LootComponent
+   ↓
+Give loot to player or spawn WorldItemActor
+   ↓
+Mark actor as inactive (hide, disable collision, block interaction)
+   ↓
+Register respawn with Respawn Manager
+   ↓
+Respawn Manager waits…
+   ↓
+OnRespawnRequested → Actor resets loot + visuals
+```
+
+So:
+
+- **LootComponent** = “What dropped?”
+- **Respawn Manager** = “When does this node come back?”
+
+---
+
+## **2. Required Components**
+
+On your loot source actor (e.g., `BP_Tree`, `BP_Rock`, `BP_OreNode`, `BP_BerryBush`):
+
+- `ULootComponent` – which uses a `LootTable` (e.g. `LT_TreeLoot`)
+- (Recommended) implements `BPI_Respawnable` / `IRespawnable`
+- A mesh or visual component you can hide/show
+- A collision/interaction component to enable/disable
+- A `RespawnTime` float
+
+Example:
+
+```
+Components:
+- StaticMesh (TreeMesh)
+- LootComponent (LootComponent)
+Variables:
+- RespawnTime = 300.0
+- bHasBeenHarvested (bool)
+```
+
+---
+
+## **3. Resource Node Pattern (Tree/Rock/Ore)**
+
+### 3.1 Tree Example — Blueprint Flow
+
+**On Harvest:**
+
+```
+Event OnHarvested
+   ↓
+Branch: bHasBeenHarvested?
+   True → Return
+   False →
+       Set bHasBeenHarvested = true
+       ↓
+       LootComponent → Generate Loot
+           → Loot Result
+       ↓
+       Give items to player (Add to Inventory / Spawn WorldItemActor)
+       ↓
+       Hide Mesh (Set Visibility = false)
+       Disable Collision
+       Disable Interaction
+       ↓
+       Get RespawnManagerSubsystem
+           → Register Respawn Request
+              Target Actor = Self
+              Delay        = RespawnTime
+```
+
+**On Respawn:**
+
+```
+Event OnRespawnRequested  (from BPI_Respawnable)
+   ↓
+Set bHasBeenHarvested = false
+LootComponent → Reset Loot
+Show Mesh
+Enable Collision
+Enable Interaction
+```
+
+That’s literally enough to have infinite renewable trees.
+
+---
+
+### 3.2 Rock/Ore Example — C++
+
+**Header:**
+
+```
+UCLASS()
+class YOURGAME_API AOreNode : public AActor, public IRespawnable
+{
+    GENERATED_BODY()
+
+public:
+    void OnHarvested(APlayerController* Harvester);
+
+    virtual void OnRespawnRequested() override;
+
+protected:
+    UPROPERTY(VisibleAnywhere)
+    UStaticMeshComponent* Mesh;
+
+    UPROPERTY(VisibleAnywhere)
+    ULootComponent* LootComponent;
+
+    UPROPERTY(EditAnywhere, Category="Respawn")
+    float RespawnTime = 300.0f;
+
+    bool bHasBeenHarvested = false;
+};
+```
+
+**Source:**
+
+```
+void AOreNode::OnHarvested(APlayerController* Harvester)
+{
+    if (bHasBeenHarvested) return;
+    bHasBeenHarvested = true;
+
+    // Generate loot
+    FLootResult Loot = LootComponent->GenerateLoot();
+    if (AMyCharacter* Character = Cast<AMyCharacter>(Harvester->GetPawn()))
+    {
+        for (const FLootedItem& Item : Loot.SpawnedItems)
+        {
+            Character->InventoryComponent->AddItem(Item.ItemData, Item.Quantity);
+        }
+    }
+
+    // Disable node
+    Mesh->SetVisibility(false);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    // Register respawn
+    if (URespawnManagerSubsystem* RM = GetWorld()->GetSubsystem<URespawnManagerSubsystem>())
+    {
+        RM->RegisterRespawnRequest(this, RespawnTime);
+    }
+}
+
+void AOreNode::OnRespawnRequested()
+{
+    bHasBeenHarvested = false;
+
+    // Reset loot
+    LootComponent->ResetLoot();
+
+    // Re-enable node
+    Mesh->SetVisibility(true);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+```
+
+---
+
+## **4. Chests & Containers**
+
+You probably want **two behaviors** for chests:
+
+1. **Single-use chest** (dungeon chest, boss chest):
+
+   - Uses LootComponent
+   - `bSingleUse = true`
+   - **No respawn** → just disabled once looted
+2. **Respawnable chest** (world chests, camp chests):
+
+   - Uses LootComponent
+   - `bSingleUse = false`
+   - Registers with Respawn Manager after being looted
+
+---
+
+### 4.1 Blueprint: Single-use Chest (No Respawn)
+
+```
+Event OnOpenChest
+   ↓
+LootComponent → Generate Loot
+   → Loot Result
+   ↓
+Add items to player inventory
+   ↓
+LootComponent → MarkAsLooted (internally handled)
+   ↓
+Disable interaction / Change mesh to "opened"
+   ↓
+(Optional) Destroy actor later
+```
+
+No respawn request is sent.
+
+---
+
+### 4.2 Blueprint: Respawnable Chest
+
+**On Chest Looted:**
+
+```
+Event OnChestOpened
+   ↓
+LootComponent → Generate Loot
+   → Loot Result
+   ↓
+Give loot to player
+   ↓
+Set bIsOpen = true
+Change to "opened" mesh or animation
+Disable interaction
+   ↓
+Get RespawnManagerSubsystem
+   → Register Respawn Request
+      Target Actor = Self
+      Delay        = RespawnTime
+```
+
+**On Respawn:**
+
+```
+Event OnRespawnRequested
+   ↓
+Set bIsOpen = false
+LootComponent → Reset Loot
+Change to "closed" mesh
+Enable interaction
+```
+
+This gives you camp chests that refill on a timer.
+
+---
+
+## **5. Enemy Loot vs Enemy Respawn**
+
+Important distinction:
+
+- **Loot System** handles *what drops when an enemy dies*
+- **Respawn Manager** should **not** respawn the enemy itself directly (usually)
+
+Typical pattern:
+
+1. Enemy has a `LootComponent`
+2. On death:
+
+   - `LootComponent → GenerateLoot`
+   - Spawn `WorldItemActor`s around corpse, or auto-loot to players
+3. Enemy **does not** register itself with Respawn Manager
+4. A **separate spawner or manager** uses Respawn Manager to handle enemy respawn
+
+---
+
+### 5.1 Enemy Death + LootComponent
+
+**Blueprint:**
+
+```
+Event OnDeath
+   ↓
+LootComponent → Generate Loot
+   → Loot Result
+   ↓
+For each item:
+    Spawn WorldItemActor at random offset
+   ↓
+Destroy enemy (or hide corpse)
+```
+
+No respawn scheduling here.
+
+---
+
+### 5.2 Enemy Spawner + Respawn Manager
+
+Spawner actor:
+
+```
+void AEnemySpawner::OnEnemyDied()
+{
+    if (URespawnManagerSubsystem* RM = GetWorld()->GetSubsystem<URespawnManagerSubsystem>())
+    {
+        RM->RegisterRespawnRequest(this, RespawnDelay);
+    }
+}
+
+void AEnemySpawner::OnRespawnRequested()
+{
+    SpawnEnemy();
+}
+```
+
+So:
+
+- **LootComponent** = enemy drops
+- **Respawn Manager** = when spawner creates a new enemy
+
+Cleaner separation, especially for multiplayer & save/load.
+
+---
+
+## **6. WorldItemActor & Decay**
+
+You can also mix **loot → world items → decay** with respawns:
+
+- `LootComponent` generates items
+- You spawn `WorldItemActor`s using `InventoryComponent → SpawnWorldItem()`
+- `WorldItemActor` runs **decay/spoilage** logic (UMI)
+- When items expire, you may (optionally) have the **spawn point** schedule a respawn via Respawn Manager, if you want periodic “drop piles” in the world
+
+This is more niche, but the pattern is:
+
+```
+LootComponent → WorldItemActor
+WorldItemActor decays and destroys itself
+Spawner or node schedules next respawn
+```
+
+---
+
+## **7. Common Gotchas**
+
+### ❌ Forgetting to call `ResetLoot()` on respawn
+
+Result: chest respawns visually but drops nothing (or keeps old state).  
+**Fix:** Always call `LootComponent → Reset Loot` in `OnRespawnRequested`.
+
+---
+
+### ❌ Using per-actor timers + Respawn Manager together
+
+Result: duplicated logic, inconsistent behavior.  
+**Fix:** Pick one pattern. For anything integrated with Respawn Manager, let **only** the manager handle timing.
+
+---
+
+### ❌ Not disabling collision/interaction on harvested nodes
+
+Result: invisible objects blocking the player or still interactable.  
+**Fix:** On harvest/loot: hide mesh, disable collision, disable interaction.
+
+---
+
+### ❌ Trying to respawn enemies directly with LootComponent
+
+Respawn Manager should be used with **spawners or respawn points**, not with dead pawns themselves.  
+Keep loot and respawn responsibility separated.
+
+---
+
+## **8. Best Practice Recipes**
+
+### Renewable Resource Node
+
+- Actor: `BP_Tree`, `BP_Rock`, `BP_OreNode`
+- Components: `StaticMesh`, `LootComponent`
+- Interface: `BPI_Respawnable`
+- Flow:
+
+  - On harvest: `GenerateLoot` → give items → hide/disable → register respawn
+  - On respawn: `ResetLoot` → show/enable
+
+---
+
+### Renewable Loot Chest
+
+- Actor: `BP_CampChest`
+- Components: `StaticMesh`, `LootComponent`
+- Variables: `RespawnTime`, `bIsOpen`
+- Flow:
+
+  - On open: generate loot, give to player, mark open, disable interaction, register respawn
+  - On respawn: reset loot, mark closed, enable interaction
+
+---
+
+### Single-Use Boss Chest
+
+- Actor: `BP_BossChest`
+- `LootComponent` with Legendary-weighted `LootTable`
+- `bSingleUse = true`
+- No respawn registration
+- Optional: destroy chest after opening
+
+---
+
+## **9. Summary**
+
+- **LootComponent + LootTable** decide **what** is dropped.
+- **Respawn Manager** decides **when** the loot source comes back.
+- Resource nodes and chests are the main candidates for Respawn Manager + Loot integration.
+- Enemies should use **LootComponent for drops**, and **separate spawners** for enemy respawn.

@@ -1,0 +1,364 @@
+---
+title: "API Reference"
+description: "This page gives a high-level overview of the primary Blueprint and C++ APIs exposed by the Respawn Manager."
+---
+
+This page gives a **high-level overview** of the primary Blueprint and C++ APIs exposed by the Respawn Manager.
+
+The goal is to show:
+
+- What functions exist conceptually
+- How they’re typically used
+- Which are **core** vs **optional/advanced**
+
+> Exact naming may differ slightly in your project. Treat this as the “design contract” for how the subsystem is intended to be used.
+
+---
+
+## **1. Core Class**
+
+### **URespawnManagerSubsystem**
+
+**Type:** `UWorldSubsystem`  
+**Header (example):**  
+`#include "RespawnManagerSubsystem.h"`
+
+**Purpose:**  
+Centralized management of all respawnable actors and timed respawn entries in the world.
+
+Accessible from any actor:
+
+```
+URespawnManagerSubsystem* RespawnManager =
+    GetWorld()->GetSubsystem<URespawnManagerSubsystem>();
+```
+
+Blueprint:
+
+```
+Get World Subsystem → RespawnManagerSubsystem
+```
+
+---
+
+## **2. Core Registration API**
+
+These are the **essential functions** you’ll use in almost every integration.
+
+---
+
+### **RegisterRespawnRequest**
+
+Registers an actor to be respawned after a delay.
+
+**C++ (concept):**
+
+```
+void RegisterRespawnRequest(AActor* Target, float DelaySeconds);
+```
+
+**Blueprint Node:**
+
+```
+RespawnManagerSubsystem → Register Respawn Request
+    Target Actor : Actor
+    Delay        : float (seconds)
+```
+
+**Notes:**
+
+- `Target` is usually `self` (resource node, loot chest, trap, etc.)
+- After `DelaySeconds`, the subsystem will trigger the respawn callback  
+  (typically `OnRespawnRequested` via interface)
+
+---
+
+### **CancelRespawnRequest** *(Optional but recommended)*
+
+Cancels a previously registered respawn for an actor.
+
+**C++:**
+
+```
+void CancelRespawnRequest(AActor* Target);
+```
+
+**Blueprint Node:**
+
+```
+RespawnManagerSubsystem → Cancel Respawn Request
+    Target Actor : Actor
+```
+
+Useful when:
+
+- Actor is permanently destroyed
+- Actor changes behavior (e.g., converted to another type)
+- Dungeon or region is being reset manually
+
+---
+
+## **3. Interface / Callback API**
+
+The Respawn Manager calls back into the actor when it’s time to respawn.  
+This is usually done via an interface.
+
+---
+
+### **IRespawnable / BPI\_Respawnable**
+
+**Interface Name (example):**
+
+- C++: `IRespawnable`
+- Blueprint: `BPI_Respawnable`
+
+**Primary methods:**
+
+**OnRespawnRequested**
+
+Called by the Respawn Manager when the countdown finishes.
+
+**C++:**
+
+```
+UINTERFACE(Blueprintable)
+class URespawnable : public UInterface { GENERATED_BODY() };
+
+class IRespawnable
+{
+    GENERATED_BODY()
+
+public:
+    UFUNCTION(BlueprintNativeEvent)
+    void OnRespawnRequested();
+};
+```
+
+**Blueprint:**
+
+```
+Event OnRespawnRequested
+```
+
+**Typical responsibilities in implementation:**
+
+- Reset internal flags (`bHasBeenHarvested = false`)
+- Reset loot (`LootComponent → ResetLoot`)
+- Re-enable mesh visibility and collision
+- Re-enable interaction
+
+---
+
+**GetRespawnDelay** *(Optional)*
+
+If you want per-actor or dynamic respawn times, the interface may expose:
+
+**C++:**
+
+```
+UFUNCTION(BlueprintNativeEvent)
+float GetRespawnDelay() const;
+```
+
+**Blueprint:**
+
+```
+Function GetRespawnDelay
+   Return: float (seconds)
+```
+
+The subsystem can use this as an override when `RegisterRespawnRequest` is called with a sentinel delay (e.g., ≤ 0).
+
+---
+
+## **4. Query API (Optional)**
+
+For debugging and advanced logic, you may expose basic queries.
+
+---
+
+### **HasPendingRespawn**
+
+Check if a given actor has an active respawn entry.
+
+**C++:**
+
+```
+bool HasPendingRespawn(AActor* Target) const;
+```
+
+**Blueprint:**
+
+```
+RespawnManagerSubsystem → Has Pending Respawn
+    Target Actor : Actor
+    Return       : bool
+```
+
+---
+
+### **GetTimeRemainingForActor**
+
+Returns how many seconds remain before a respawn fires.
+
+**C++:**
+
+```
+float GetTimeRemainingForActor(AActor* Target) const;
+```
+
+**Blueprint:**
+
+```
+RespawnManagerSubsystem → Get Time Remaining For Actor
+    Target Actor : Actor
+    Return       : float (seconds)
+```
+
+---
+
+## **5. Region & Category Controls (Advanced / Optional)**
+
+If you implement region/category grouping as described in **Advanced Topics**, the API typically looks like this.
+
+Treat all of these as **optional / advanced**.
+
+---
+
+### **SetRegionPaused**
+
+Pause or resume respawns for a logical region.
+
+**C++:**
+
+```
+void SetRegionPaused(FName RegionId, bool bPaused);
+```
+
+**Blueprint:**
+
+```
+RespawnManagerSubsystem → Set Region Paused
+    Region ID : Name
+    Paused    : bool
+```
+
+---
+
+### **ForceRespawnByRegion**
+
+Immediately trigger respawn for all pending entries in a region.
+
+**C++:**
+
+```
+void ForceRespawnByRegion(FName RegionId);
+```
+
+**Blueprint:**
+
+```
+RespawnManagerSubsystem → Force Respawn By Region
+    Region ID : Name
+```
+
+---
+
+### **ForceRespawnByCategory**
+
+Same idea, but grouped by “category” tag (e.g., `"Resource.Tree"`, `"Chest.World"`).
+
+**C++:**
+
+```
+void ForceRespawnByCategory(FName CategoryId);
+```
+
+**Blueprint:**
+
+```
+RespawnManagerSubsystem → Force Respawn By Category
+    Category ID : Name
+```
+
+---
+
+## **6. Foliage-Specific Helpers (Optional)**
+
+If you decide to expose foliage helpers directly from the Respawn Manager (rather than routing everything through a FoliageInteractionManager), you might have something like:
+
+---
+
+### **RegisterFoliageRespawn** *(Pattern-Level)*
+
+Registers a foliage instance to be respawned.
+
+**C++ (concept):**
+
+```
+void RegisterFoliageRespawn(const FFoliageRespawnEntry& Entry, float DelaySeconds);
+```
+
+Where `FFoliageRespawnEntry` contains:
+
+- Weak pointer to `UHierarchicalInstancedStaticMeshComponent`
+- Transform of the instance
+- Optional type/category info
+
+In many setups, this is called from your **FoliageInteractionManager**, not directly from actors.
+
+> If you keep foliage logic in a separate manager, this may not be exposed as public API at all, but it’s useful to describe at the design level.
+
+---
+
+## **7. Debug / Utility API (Optional)**
+
+For development and admin tools, you might expose:
+
+---
+
+### **ClearAllRespawnEntries**
+
+Remove all pending respawns (useful for debugging, admin tools, level resets).
+
+**C++:**
+
+```
+void ClearAllRespawnEntries();
+```
+
+**Blueprint:**
+
+```
+RespawnManagerSubsystem → Clear All Respawn Entries
+```
+
+---
+
+### **GetTotalActiveRespawns**
+
+Returns the total number of currently tracked respawn entries.
+
+**C++:**
+
+```
+int32 GetTotalActiveRespawns() const;
+```
+
+**Blueprint:**
+
+```
+RespawnManagerSubsystem → Get Total Active Respawns
+    Return : int32
+```
+
+---
+
+## **8. Typical Usage Flow**
+
+For most actors, you will only need:
+
+1. `RegisterRespawnRequest(this, RespawnTime);`
+2. Implement `OnRespawnRequested` (interface or Blueprint event)
+
+Everything else (regions, budgets, queries) is **optional** and only needed for large worlds and more advanced simulation.

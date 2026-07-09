@@ -1,0 +1,203 @@
+---
+title: "Inventory System"
+description: "The Ultimate Multiplayer Inventory (UMI) system is a complete, production-ready item management framework for Unreal Engine 5+, designed by WarPath Studios."
+---
+
+The **Ultimate Multiplayer Inventory (UMI)** system is a complete, production-ready item management framework for Unreal Engine 5+, designed by WarPath Studios.  
+UMI provides core systems for:
+
+- Inventory & storage
+- Equipment & character loadouts
+- Hotbar & quick actions
+- Loot generation
+- Crafting (optional integration)
+- World item interaction
+- Persistence & saving
+
+UMI is built **multiplayer-first**, fully replicated, and optimized for authoritative server gameplay. Whether you're building a survival game, MMO, RPG, extraction shooter, or sandbox project, UMI provides a reliable, extensible foundation.
+
+---
+
+# **Design Philosophy**
+
+- **Multiplayer First**  
+  All operations follow strict server authority and validated RPCs.
+- **Extensible Architecture**  
+  Blueprint and C++ friendly with well-defined extension points.
+- **Data-Driven**  
+  Items, recipes, loot tables, and actions defined as Primary Data Assets.
+- **Integration Ready**  
+  Optional integrations with GAS, Enhanced Input, and Common UI.
+- **Performance Focused**  
+  Optimized replication, lightweight structs, async loading, and container-level networking.
+
+---
+
+# **Key Features (Summary)**
+
+### **Inventory**
+
+- Flexible slot-based storage
+- Advanced stacking (durability, decay, provenance)
+- Weight & encumbrance support
+- Tag-based restrictions (per slot or container)
+- Auto-stack, auto-sort, item splitting, overflow handling
+- 8 sort types (name, rarity, quantity, category, value, etc.)
+
+### **Equipment**
+
+- Dynamic equipment slots
+- Mesh swaps (skeletal & static)
+- Body part hiding (hair, helmets, etc.)
+- Rarity-based visuals
+- Equipment presets (armor, jewelry, weapons, clothing)
+
+### **Hotbar & Quick Actions**
+
+- Quick slot system for weapons, tools, consumables
+- Auto-refill memory
+- Cooldowns per slot
+- Weapon swapping with equipment integration
+
+### **Item Definition System**
+
+- Data Asset–driven items
+- Display name, description, flavor text
+- Icons, meshes, multiple mesh variants (male/female/default)
+- Rarity tags
+- Durability & decay
+- Infusion/mod slots
+
+### **Loot System**
+
+- Weighted loot tables
+- Level/rank scaling
+- Quantity ranges
+- Single-use or respawnable containers
+- Easy integration with world actors
+
+### **Crafting System**
+
+*(Optional — only if Crafting plugin is installed)*
+
+- SimpleQueue, MultiSlot, MaterialProcessing modes
+- Data Asset–driven recipes
+- Ingredient + tool + fuel requirements
+- Optional ingredients with bonus effects
+- Skill hooks for bonuses or perk effects
+- Pause/resume + progress tracking
+
+### **Interaction System**
+
+- Raycast and proximity-based interaction
+- Hold-interact with progress bar
+- Tool requirements
+- LOS checks, distance checks
+- Animation montage support
+- Foliage interaction
+
+### **Persistence & Saving**
+
+- Automatic save with configurable autosave
+- ISaveable interface
+- Bucket-based organization
+- Level streaming support
+- Async load
+- Extendable backend (file, cloud, DB)
+- **All other UM plugins work automatically with this system.**
+
+### **Primary Action System**
+
+- Central action dispatcher for item use
+- GAS integration for abilities/effects
+- Press/hold/release input modes
+- Global cooldowns and validation
+- Combo chains for melee
+
+### **Player Profile**
+
+- Central hub for all player systems  
+  (Inventory, equipment, hotbar, crafting, abilities, etc.)
+- Handles UI blocking
+- Handles teleportation & location management
+
+### **Multiplayer**
+
+- Full replication for all item operations
+- Server authority enforcement
+- Validated RPCs
+- Area-based networking for container replication
+- Bandwidth-optimized deltas
+
+---
+
+# **System Architecture (Summary)**
+
+### Player Character
+
+```
+PlayerProfileComponent  (central hub)
+InventoryComponent      (item storage)
+HotbarComponent         (quick access)
+EquipmentComponent      (equipped items)
+InteractionComponent    (interaction logic)
+AbilitySystemComponent  (optional GAS integration)
+```
+
+### Crafting Stations
+
+```
+CraftingComponent
+InventoryComponent (inputs)
+InventoryComponent (outputs)
+```
+
+### World Containers
+
+```
+InventoryComponent
+SaveableContainerComponent
+```
+
+### Data Asset Architecture
+
+```
+ItemDataAsset               (items)
+ItemActionSet               (action behavior)
+CraftingRecipeDataAsset     (recipes)
+LootTable                   (loot)
+```
+
+---
+
+# **Quick Start**
+
+1. Enable UMI in your project
+2. Add **InventoryComponent** to player character
+3. Create **ItemDataAssets**
+4. Add **InteractionComponent** to your PlayerController
+5. Setup UI using the provided base widgets
+6. Test item pickup, equipment, and inventory management
+
+> For complete installation instructions, see **Installation & Setup**.
+
+---
+
+# **System Requirements**
+
+- Unreal Engine 5.0+
+- Gameplay Ability System (optional, recommended)
+- Enhanced Input
+- Common UI
+- Multiplayer or single-player supported
+- All platforms supported by UE
+
+---
+
+# **Performance Considerations**
+
+- Per-frame save budget
+- Delta replication for item changes
+- Area-of-interest networking
+- Async load operations
+- Optional object pooling for world items

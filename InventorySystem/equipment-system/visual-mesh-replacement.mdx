@@ -1,0 +1,176 @@
+---
+title: "Visual Mesh Replacement"
+description: "1."
+---
+
+### **How It Works**
+
+1. Each equipment slot references a `SkeletalMeshComponent`
+2. When an item is equipped, its mesh is applied to that component
+3. Materials can be overridden based on rarity
+4. Body parts can be hidden to prevent clipping
+
+### **Setting Up Mesh Components**
+
+**Blueprint**:
+
+1. Add skeletal mesh components to your character:
+
+   ```
+   Character Blueprint:
+   ├── Mesh (Main body)
+   ├── Head_Mesh (SkeletalMeshComponent)
+   ├── Chest_Mesh (SkeletalMeshComponent)
+   ├── Legs_Mesh (SkeletalMeshComponent)
+   ├── Feet_Mesh (SkeletalMeshComponent)
+   ├── MainHand_Mesh (SkeletalMeshComponent)
+   └── OffHand_Mesh (SkeletalMeshComponent)
+   ```
+2. Set up attachment:
+
+   - Parent each component to appropriate sockets
+   - Head\_Mesh → head socket
+   - Chest\_Mesh → spine\_03 socket
+   - MainHand\_Mesh → hand\_r socket
+   - etc.
+3. Configure mesh components:
+
+   ```
+   Master Pose Component: Mesh (main body)
+   ```
+
+   This makes equipment follow the main skeleton's animation.
+
+### **Mesh Variants**
+
+Items store their meshes in a `SkeletalMeshes` map on `ItemDataAsset`, keyed by `FName`. When equipment is applied to a slot, the system resolves the mesh key in this order:
+
+1. **Slot name** (spaces removed) — e.g., `"Helmet"`, `"MainHand"`
+
+2. **Tag last component** — last segment of the slot's `RequiredTag`, e.g., `"Head"` from `Items.Equipment.Head`
+
+3. \*`"Default"`\*\* — fallback key
+
+4. \*`"Slot0"`, `"Slot1"`, …\*\* — slot index as string
+
+5. **First available mesh** in the map
+
+Items can have different meshes for different character types:
+
+**In ItemDataAsset**:
+
+```
+Equipment Mesh Variants:
+   Default: SK_Helmet_Default
+   Male: SK_Helmet_Male
+   Female: SK_Helmet_Female
+```
+
+**In EquipmentComponent**:
+
+```
+EquipmentComponent->SetCharacterType("Female");
+// Now equipment will prefer Female variants
+```
+
+### **Material Overrides**
+
+Apply different materials based on rarity:
+
+![47425c27300e9af65b257f77c2d962db.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2Fa5d7be49-7b90-4558-8162-ee2ccfc784dc%2Fimages%2F47425c27300e9af65b257f77c2d962db-00221981-80ee-4b4b-be2e-65dfb26299b8.png "47425c27300e9af65b257f77c2d962db.png")
+
+**In ItemDataAsset**:
+
+```
+Equipment Material Overrides:
+   Item.Rarity.Common: M_Helmet_Grey
+   Item.Rarity.Rare: M_Helmet_Blue
+   Item.Rarity.Epic: M_Helmet_Purple
+   Item.Rarity.Legendary: M_Helmet_Orange
+```
+
+When a Rare helmet is equipped, it automatically uses the blue material.
+
+### **Manual Visual Update**
+
+Force update visuals:
+
+**Blueprint**:
+
+```
+[EquipmentComponent] → UpdateEquipmentVisuals
+   Slot Index: 0
+```
+
+```
+[EquipmentComponent] → UpdateAllEquipmentVisuals
+```
+
+**C++**:
+
+```
+// Update single slot
+EquipmentComponent->UpdateEquipmentVisuals(SlotIndex);
+
+// Update all slots
+EquipmentComponent->UpdateAllEquipmentVisuals();
+```
+
+---
+
+## **Body Part Hiding**
+
+### **Overview**
+
+When equipment is worn, you may want to hide parts of the character mesh to prevent clipping (e.g., hide hair under helmet).
+
+### **Configuration**
+
+**In ItemDataAsset**:
+
+```
+Hides Body Parts: true
+Body Parts To Hide: [Hair, Head, Eyebrows]
+```
+
+**In Equipment Slot Definition**:
+
+```
+Hides Base Mesh: true
+Base Mesh Parts To Hide: [Hair, Head]
+```
+
+### **How It Works**
+
+When equipment is equipped:
+
+```
+EquipmentComponent->SetBaseMeshPartsVisibility(
+    BaseMeshPartsToHide,
+    false  // Hide
+);
+```
+
+When equipment is unequipped:
+
+```
+EquipmentComponent->SetBaseMeshPartsVisibility(
+    BaseMeshPartsToHide,
+    true  // Show
+);
+```
+
+### **Mesh Part Names**
+
+Common mesh part names (depends on your skeletal mesh):
+
+- `Hair`
+- `Head`
+- `Eyebrows`
+- `Beard`
+- `FacialHair`
+- `Torso`
+- `Arms`
+- `Legs`
+
+Check your character's skeletal mesh to find the exact material slot names.

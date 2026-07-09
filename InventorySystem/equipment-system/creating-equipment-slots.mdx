@@ -1,0 +1,133 @@
+---
+title: "Creating Equipment Slots"
+description: "UMI provides preset slot configurations for common setups:"
+---
+
+### **Slot Definition Structure**
+
+```
+struct FEquipmentSlotDefinition
+{
+    FText SlotName;                          // "Helmet", "Main Hand", etc.
+    FGameplayTag RequiredTag;                 // Equipment.Slot.Head
+    USkeletalMeshComponent* MeshComponent;    // Visual component
+    bool bHidesBaseMesh;                      // Hide base mesh parts
+    TArray<FName> BaseMeshPartsToHide;        // Specific parts to hide
+    int32 SlotIndex;                          // Corresponding inventory slot
+    TSoftObjectPtr<UTexture2D> SlotIcon;      // UI icon
+    FText SlotTooltip;                        // UI tooltip
+};
+```
+
+### **Preset Configurations**
+
+UMI provides preset slot configurations for common setups:
+
+**Standard Armor Slots**
+
+```
+// Blueprint or C++
+EquipmentComponent->SetupStandardArmorSlots();
+```
+
+Creates slots for:
+
+- **Head** (Equipment.Slot.Head)
+- **Chest** (Equipment.Slot.Chest)
+- **Legs** (Equipment.Slot.Legs)
+- **Feet** (Equipment.Slot.Feet)
+- **Hands** (Equipment.Slot.Hands)
+
+**Jewelry Slots**
+
+```
+EquipmentComponent->SetupJewelrySlots();
+```
+
+Creates slots for:
+
+- **Ring 1** (Equipment.Slot.Ring1)
+- **Ring 2** (Equipment.Slot.Ring2)
+- **Necklace** (Equipment.Slot.Necklace)
+- **Earrings** (Equipment.Slot.Earrings)
+
+**Weapon Slots**
+
+```
+EquipmentComponent->SetupWeaponSlots();
+```
+
+Creates slots for:
+
+- **Main Hand** (Equipment.Slot.MainHand)
+- **Off Hand** (Equipment.Slot.OffHand)
+
+**Clothing Slots**
+
+```
+EquipmentComponent->SetupClothingSlots();
+```
+
+Creates slots for:
+
+- **Hat** (Equipment.Slot.Hat)
+- **Shirt** (Equipment.Slot.Shirt)
+- **Pants** (Equipment.Slot.Pants)
+- **Shoes** (Equipment.Slot.Shoes)
+- **Cloak** (Equipment.Slot.Cloak)
+
+### **Custom Slot Configuration**
+
+**Blueprint Setup**:
+
+1. Add `EquipmentComponent` to your character
+2. In Details panel, expand **Equipment Slots** array
+3. Add a new slot:
+
+   ```
+   [0]:
+      Slot Name: "Helmet"
+      Required Tag: Equipment.Slot.Head
+      Mesh Component: [Reference to Head_Mesh component]
+      Hides Base Mesh: true
+      Base Mesh Parts To Hide: [Hair, Head]
+      Slot Index: 0
+      Slot Icon: T_Helmet_Icon
+      Slot Tooltip: "Protects your head"
+   ```
+
+**C++ Setup**:
+
+```
+FEquipmentSlotDefinition HelmetSlot;
+HelmetSlot.SlotName = FText::FromString("Helmet");
+HelmetSlot.RequiredTag = FGameplayTag::RequestGameplayTag("Equipment.Slot.Head");
+HelmetSlot.MeshComponent = HeadMeshComponent;
+HelmetSlot.bHidesBaseMesh = true;
+HelmetSlot.BaseMeshPartsToHide.Add("Hair");
+HelmetSlot.BaseMeshPartsToHide.Add("Head");
+HelmetSlot.SlotIndex = 0;
+
+EquipmentComponent->EquipmentSlots.Add(HelmetSlot);
+```
+
+## Runtime Slot Management
+
+Slots can also be added, removed, or cleared at runtime:
+
+```
+// Add or update a slot
+
+EquipmentComponent->AddEquipmentSlot(SlotDefinition);
+```
+
+```
+// Remove a slot (unequips item in slot first)
+
+EquipmentComponent->RemoveEquipmentSlot(SlotIndex);
+```
+
+```
+// Remove all slot definitions
+EquipmentComponent->ClearEquipmentSlots();
+```

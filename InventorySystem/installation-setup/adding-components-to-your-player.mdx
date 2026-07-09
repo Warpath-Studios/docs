@@ -1,0 +1,166 @@
+---
+title: "Adding Components to Your Player"
+description: "This is the minimal setup to get inventory working:"
+---
+
+### **Basic Player Setup**
+
+This is the minimal setup to get inventory working:
+
+1. **Open your Player Character Blueprint** (or C++ class)
+2. **Add InventoryComponent**:
+
+   - In the Blueprint editor, click **Add Component**
+   - Search for `InventoryComponent`
+   - Add it to your character
+   - Configure in the Details panel:
+
+     - `Max Slots`: 30 (or your desired amount)
+     - `Max Weight`: 100.0 (or 0 for unlimited)
+     - `Inventory Type`: Standard
+3. **Add PlayerProfileComponent**:
+
+   - Add Component > `PlayerProfileComponent`
+   - This will be auto-configured on BeginPlay to find your inventory
+
+### **Advanced Player Setup**
+
+For full functionality, add these additional components:
+
+**1. Equipment System**
+
+```
+Character Blueprint:
+├── EquipmentComponent (add to character)
+│   └── Configuration:
+│       - Base Mesh: Reference to your character's skeletal mesh
+│       - Equipment Inventory: Create separate InventoryComponent
+│
+└── Equipment Mesh Components:
+    ├── Head_Mesh (SkeletalMeshComponent)
+    ├── Chest_Mesh (SkeletalMeshComponent)
+    ├── Legs_Mesh (SkeletalMeshComponent)
+    └── ...
+```
+
+**Steps**:
+
+1. Add `EquipmentComponent` to your character
+2. Add skeletal mesh components for each equipment slot (Head, Chest, etc.)
+3. In the EquipmentComponent details:
+
+   - Set `Base Mesh` to your character's main skeletal mesh
+   - Click **Setup Standard Armor Slots** or **Setup Weapon Slots** for presets
+   - Or manually configure slots in the `Equipment Slots` array
+
+**2. Hotbar System**
+
+```
+Character Blueprint:
+└── HotbarComponent (add to character)
+    └── Configuration:
+        - Max Slots: 9 (or your desired hotbar size)
+        - Auto Refill Enabled: true
+        - Player Inventory: Will auto-link to main inventory
+```
+
+**Steps**:
+
+1. Add `HotbarComponent` to your character
+2. Configure `Max Slots` (typically 9 for number keys)
+3. Enable `Auto Refill Enabled` for automatic refilling
+4. The component will automatically link to your main inventory on BeginPlay
+
+**3. Interaction System**
+
+**On Player Controller** (not Character):
+
+```
+PlayerController Blueprint:
+└── InteractionComponent (add to controller)
+    └── Configuration:
+        - Trace Distance: 500 (cm)
+        - Use Sphere Trace: true
+        - Sphere Trace Radius: 20
+        - Draw Debug Trace: false (enable for testing)
+```
+
+**Steps**:
+
+1. Open your **Player Controller** Blueprint
+2. Add `InteractionComponent`
+3. Configure trace settings
+4. Bind to Enhanced Input (or create Input Action)
+
+**4. Ability System Component (GAS)**
+
+If using Gameplay Abilities (required for weapons/consumables):
+
+```
+Character Blueprint:
+└── AbilitySystemComponent (add to character)
+```
+
+**Steps**:
+
+1. Add `AbilitySystemComponent` to your character
+2. Link it to PlayerProfileComponent (happens automatically)
+3. Grant default abilities on BeginPlay if needed
+
+### **Full Player Setup Example (Blueprint)**
+
+**In your Player Character Blueprint**:
+
+1. **Components**:
+
+   - InventoryComponent (Main Storage)
+   - InventoryComponent (Equipment Storage)
+   - HotbarComponent
+   - EquipmentComponent
+   - PlayerProfileComponent
+   - AbilitySystemComponent (if using GAS)
+2. **Event Graph** - BeginPlay:
+
+```
+Event BeginPlay
+   ↓
+[Initialize Player Profile]
+   ↓
+[Setup Equipment Slots]
+   ↓
+[Link Inventories to Profile]
+   ↓
+[Grant Starting Items]
+```
+
+**Blueprint Example**:
+
+```
+[Event BeginPlay]
+   ↓
+[PlayerProfileComponent] → [Initialize Profile]
+   ↓
+[EquipmentComponent] → [Setup Standard Armor Slots]
+   ↓
+[EquipmentComponent] → [Initialize Equipment]
+   - Main Inventory: [InventoryComponent]
+   - Equipment Inventory: [Equipment InventoryComponent]
+   ↓
+[HotbarComponent] → [Set Player Inventory]
+   - Inventory: [InventoryComponent]
+   ↓
+[Add Starting Items] (optional)
+   - [InventoryComponent] → [Add Item]
+   - Item: HealthPotion x5
+```
+
+**In your Player Controller Blueprint**:
+
+1. **Components**:
+
+   - InteractionComponent
+2. **Enhanced Input Setup**:
+
+   - Bind Interact input to `InteractionComponent → Handle Interaction Input`
+   - Bind Hotbar inputs to `HotbarComponent → Use Hotbar Slot`
+   - Bind Inventory toggle to `PlayerProfileComponent → Toggle Inventory`

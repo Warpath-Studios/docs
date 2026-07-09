@@ -1,0 +1,102 @@
+---
+title: "Slot Selection & Scrolling"
+description: "Set the selected slot:"
+---
+
+### Selection (Blueprint)
+
+Set the selected slot:
+
+```
+Set Selected Slot
+   Slot Index = X
+```
+
+Get the current selection:
+
+```
+Get Selected Slot
+→ int32
+```
+
+Check if a given slot is selected:
+
+```
+Is Slot Selected
+   Slot Index = X
+   Return     = true/false
+```
+
+### Selection (C++)
+
+```
+HotbarComponent->SetSelectedSlot(DesiredIndex);
+
+int32 Selected = HotbarComponent->GetSelectedSlot();
+
+bool bSelected = HotbarComponent->IsSlotSelected(SomeIndex);
+```
+
+---
+
+### Responding to Selection Changes
+
+Blueprint Event
+
+In HotbarComponent or listening Blueprint:
+
+```
+Event On Slot Selection Changed
+   New Selected Slot = Index
+   ↓
+Update UI highlight
+   ↓
+Optionally: Equip weapon / update action
+```
+
+C++
+
+```
+HotbarComponent->OnSlotSelectionChanged.AddDynamic(this, &AMyClass::HandleSelectionChanged);
+
+void AMyClass::HandleSelectionChanged(int32 NewSlot)
+{
+    // Example: update UI and/or equip
+    HotbarUI->HighlightSlot(NewSlot);
+}
+```
+
+### Scroll Through Hotbar (C++ Example)
+
+```
+void AMyCharacter::ScrollHotbar(float Delta)
+{
+    int32 CurrentSlot = HotbarComponent->GetSelectedSlot();
+    int32 MaxSlots    = HotbarComponent->MaxSlots;
+
+    int32 NewSlot = CurrentSlot;
+
+    if (Delta > 0)
+    {
+        NewSlot = (CurrentSlot + 1) % MaxSlots;
+    }
+    else if (Delta < 0)
+    {
+        NewSlot = (CurrentSlot - 1 + MaxSlots) % MaxSlots;
+    }
+
+    HotbarComponent->SetSelectedSlot(NewSlot);
+}
+```
+
+In Blueprint you’d mirror this with:
+
+```
+Get Selected Slot
+   ↓
+Add/Subtract (based on scroll input)
+   ↓
+Modulo by MaxSlots
+   ↓
+Set Selected Slot
+```

@@ -1,0 +1,73 @@
+---
+title: "Equipment Rules & Validation"
+description: "Items can only be equipped in compatible slots:"
+---
+
+### **Slot Compatibility**
+
+Items can only be equipped in compatible slots:
+
+```
+// In ItemDataAsset
+Equipment Slot Tag: Equipment.Slot.MainHand
+Compatible Slot Tags: [Equipment.Slot.MainHand, Equipment.Slot.OffHand]
+```
+
+This sword can go in either Main Hand or Off Hand.
+
+### **Validation Methods**
+
+**Can Equip Item**
+
+```
+bool bCanEquip = EquipmentComponent->CanEquipItemInSlot(ItemInstance, SlotIndex);
+if (!bCanEquip)
+{
+    ShowNotification("Cannot equip this item here");
+}
+```
+
+**Find Valid Slots**
+
+```
+TArray<int32> ValidSlots = EquipmentComponent->FindValidSlotsForItem(ItemInstance);
+if (ValidSlots.Num() == 0)
+{
+    ShowNotification("No valid equipment slots for this item");
+}
+else
+{
+    // Equip to first valid slot
+    EquipmentComponent->EquipItemToSlot(ItemInstance, ValidSlots[0]);
+}
+```
+
+**Find Slot By Tag**
+
+```
+int32 SlotIndex = EquipmentComponent->FindSlotIndexByTag(
+    FGameplayTag::RequestGameplayTag("Equipment.Slot.Head")
+);
+```
+
+### **Two-Handed Weapon Example**
+
+For two-handed weapons that occupy both hand slots:
+
+**ItemDataAsset**:
+
+```
+Equipment Type Tag: Equipment.Type.TwoHanded
+Equipment Slot Tag: Equipment.Slot.MainHand
+Compatible Slot Tags: [Equipment.Slot.MainHand]
+```
+
+**Custom Logic** (in your equipment component Blueprint):
+
+```
+Event On Item Equipped
+   ↓
+   [Is Equipment Type TwoHanded?]
+      Yes → [Unequip OffHand Slot]
+      No → Continue
+```

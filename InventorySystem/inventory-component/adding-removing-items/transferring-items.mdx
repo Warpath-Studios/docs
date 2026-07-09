@@ -1,0 +1,66 @@
+---
+title: "Transferring Items"
+description: "Move an item from one inventory to another:"
+---
+
+### **Transfer Item**
+
+Move an item from one inventory to another:
+
+**Blueprint**:
+
+```
+[InventoryComponent] → TransferItem
+   From Index: 5
+   Target Inventory: [Other InventoryComponent]
+   To Index: 2
+   Quantity: 10
+   Return: Success
+```
+
+**C++**:
+
+```
+bool bSuccess = SourceInventory->TransferItem(
+    5,                    // From slot index
+    TargetInventory,      // Target inventory
+    2,                    // To slot index (-1 = any slot)
+    10                    // Quantity to transfer
+);
+```
+
+### **Move Item to Container Slot**
+
+Move between inventories with more control:
+
+```
+bool bMoved = InventoryComponent->MoveItemToContainerSlot(
+    SourceSlotIndex,
+    TargetInventory,
+    TargetSlotIndex,
+    Quantity
+);
+```
+
+### **Splitting Stacks**
+
+Split a stack in half:
+
+**Blueprint**:
+
+```
+[InventoryComponent] → SplitStack
+   Index: 5
+   Return: Success
+```
+
+If slot 5 has 20 items:
+
+- Slot 5: Now has 10 items
+- First empty slot: Gets the other 10 items
+
+**C++**:
+
+```
+bool bSuccess = InventoryComponent->SplitStack(5);
+```
