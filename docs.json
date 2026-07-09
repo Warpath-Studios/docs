@@ -376,6 +376,17 @@
           "FoliageSystem/faq",
           "FoliageSystem/troubleshooting"
         ]
+      },
+      {
+        "group": "Test",
+        "pages": [
+          {
+            "group": "Test Parent Page",
+            "pages": [
+              "test-child-page"
+            ]
+          }
+        ]
       }
     ]
   },
