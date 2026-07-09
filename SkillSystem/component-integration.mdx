@@ -1,0 +1,227 @@
+---
+title: "Component Integration"
+description: "The Skill Component is the runtime core of the Ultimate Multiplayer Skill System (UMSS)."
+---
+
+The **Skill Component** is the runtime core of the Ultimate Multiplayer Skill System (UMSS).  
+It stores all active skills, XP values, levels, parent/child relationships, and talent tree state for the player.
+
+To ensure skills persist during gameplay and replicate correctly in multiplayer, the **Skill Component should be placed on the Player Controller**, not on the Character.
+
+This page explains:
+
+- Why Player Controller is the correct location
+- How to add and configure the Skill Component
+- How to reference it in Blueprints and UI
+- Alternatives: Player State setups
+- Multiplayer considerations
+- Best practices
+
+---
+
+# 🎯 **1. Where the Skill Component Should Live**
+
+UMSS is designed for the Skill Component to live on one of two locations:
+
+## **✔ Recommended: Player Controller**
+
+For 99% of projects:
+
+- Survival games
+- RPGs
+- Action games
+- Shooters
+- Co-op
+- Session-based multiplayer
+- Open-world games
+- Anything with respawnable Characters
+
+**Advantages:**
+
+- Player Controllers do not get destroyed on respawn
+- Player identity persists across Character changes
+- UI can easily reference the Controller
+- No risk of losing skill data
+- Simpler replication flow
+- Cleaner architecture for XP awarding
+
+This is the default and recommended setup.
+
+---
+
+## **✔ Alternative (MMO-style): Player State**
+
+Use this only if:
+
+- You want progression to persist across seamless travel
+- You use custom Player Controllers per game mode
+- You have multi-server zones
+- You require extremely persistent data across map transitions
+
+This is more advanced and only needed for MMO and multi-server worlds.
+
+---
+
+## ❌ **Not Recommended: Player Character**
+
+Do NOT place the Skill Component on the Character unless you accept data loss.
+
+It breaks when:
+
+- Player respawns
+- Player changes Characters
+- Possession swaps
+- You use Character pooling
+- You use AIPawn → PlayerPawn transitions
+
+Your skill data would be destroyed and recreated — not ideal.
+
+---
+
+# 🧱 **2. Adding the Skill Component (Blueprint)**
+
+### Step-by-step:
+
+1. Open your **PlayerController Blueprint**
+2. In the Components panel → **Add Component → Skill Component**
+3. Name it:  
+   **SkillComponent**
+4. Compile & Save
+
+> **📸 Screenshot Needed**  
+> *PlayerController Blueprint with SkillComponent in the Components list.*
+
+UMSS automatically loads all skills at BeginPlay based on your **Skill Manager** asset.
+
+---
+
+# ⚙️ **3. Assigning the Skill Manager**
+
+UMSS relies on a **Skill Manager Data Asset** to load skill definitions.
+
+To assign it:
+
+1. Select your Skill Component
+2. In Details panel → **Skill Manager Data**
+3. Assign your `DA_SkillManager` asset
+
+> ![dfc6c98d067db880c7ca556bc38845ca.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2F509a8820-f64c-4df7-934b-ae9e142db34c%2Fimages%2Fdfc6c98d067db880c7ca556bc38845ca-7974e084-4696-4683-8869-8c20dbe3ec53.png "dfc6c98d067db880c7ca556bc38845ca.png")
+
+If no Skill Manager is assigned, the component will log a warning and load zero skills.
+
+---
+
+# 🔌 **4. Accessing the Skill Component in Blueprints**
+
+Since the Skill Component lives on the Player Controller, you can access it anywhere like:
+
+### **Inside Widgets (Common)**
+
+```
+Get Owning Player → Get Player Controller → Get Skill Component
+```
+
+### **Inside Character**
+
+```
+Get Controller → Cast to Player Controller → Get Skill Component
+```
+
+### **From Gameplay Systems (Melee, Crafting, Interaction)**
+
+You can always safely access:
+
+```
+Get Player Controller
+    → Get Skill Component
+```
+
+As long as you’re running on the server.
+
+---
+
+# 🔁 **5. Initialization Flow**
+
+At BeginPlay:
+
+1. Player Controller is created
+2. Skill Component initializes
+3. Skill Manager is loaded
+4. Skill Instances are created
+5. UMSS fires: **OnSkillsInitialized**
+
+If you have UI widgets that need to populate a skill list, bind to this event.
+
+---
+
+# 🌐 **6. Multiplayer Behavior**
+
+UMSS is designed for multiplayer from the ground up.
+
+### ✔ Skill Component replicates automatically
+
+XP, level, and talent node states replicate to the owning client.
+
+### ✔ Server should award XP
+
+Always call `AwardXP` on the server.
+
+### ✔ UI should live on the client
+
+UI reads data from replicated skill instances; no manual replication needed.
+
+### ✔ PlayerController location is safe
+
+PlayerControllers replicate and do not respawn — which gives you consistent skill state during the entire match/session.
+
+---
+
+# 🔧 **7. Awarding XP: Where It Should Happen**
+
+### **Server Side**
+
+- Combat hits
+- Crafting completion
+- Gather events
+- Quest rewards
+- Level-up triggers
+- Talent unlocks
+
+### **Client Side (UI Only)**
+
+- Animations
+- Popups
+- Opening skill menu
+- Highlighting nodes
+
+Everything affecting actual skill data should originate on the server.
+
+---
+
+# 📦 **8. Player State Alternative (Advanced)**
+
+If your design requires cross-level persistence:
+
+Place Skill Component on the **Player State** instead.
+
+Pros:
+
+- Survives seamless travel
+- Useful for MMO territory travel
+- Useful across multiple maps with different PlayerControllers
+
+Cons:
+
+- Harder to work with UI
+- Harder to reference
+- Requires more networking awareness
+
+Only recommended for large MMO-scale projects.
+
+---
+
+# 📌 **Next Steps**
+
+👉 [Component Integration](/warpath-studios/umf/component-integration-gjewwikl10-9xqrw967vi0u) – Setting up talents, perks, and prerequisites  
+👉 [Example Implementations](/warpath-studios/umf/example-implementations-v0pv2zo9zy-mt792hxe934g) – Combat, crafting, and gathering XP examples  
+👉 [Troubleshooting](/warpath-studios/umf/troubleshooting-uqkbm455l6-ktl0jbjzs0kz) – Common mistakes and how to fix them

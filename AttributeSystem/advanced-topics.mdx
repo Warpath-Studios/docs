@@ -1,0 +1,96 @@
+---
+title: "Advanced Topics"
+description: "This page dives into systems only advanced users or plugin developers typically use."
+---
+
+This page dives into systems only advanced users or plugin developers typically use.
+
+---
+
+## **1. Regeneration System**
+
+Each attribute can have:
+
+- Regen rate
+- Regen delay
+- Regen “tick” period
+
+UMAS handles:
+
+- Pausing regen during effects
+- Modifying regen via link definitions
+- Regeneration clamping
+- Triggering attribute change events on tick
+
+---
+
+## **2. Dynamic Modifiers**
+
+Modifiers can be applied:
+
+- Temporarily (effects)
+- Permanently (equipment)
+- Conditionally (if Stamina < 20)
+- Over time (weight system, hunger system)
+
+UMAS stores modifiers separately, evaluating them in order:
+
+1. Additive
+2. Multiplicative
+3. Override
+4. Clamps
+
+---
+
+## **3. Runtime Attribute Registration**
+
+You can add attributes dynamically in C++:
+
+```
+Attr->RegisterAttributeRuntime("HeatResistance", DefinitionStruct);
+```
+
+Useful for:
+
+- Modding
+- Equipment adding stats on the fly
+- Boss-specific attributes created at runtime
+
+---
+
+## **4. Advanced Effect Authoring**
+
+Custom effects can:
+
+- Query other attributes
+- Scale with source instigator stats
+- Execute custom C++ calculations
+- Stack or refresh
+- Expire based on conditions
+
+---
+
+## **5. Performance Notes**
+
+UMAS is optimized for:
+
+- High attribute counts (100+)
+- Large NPC populations
+- MMO-style replication volumes
+
+It uses:
+
+- Packed structures
+- Attribute batching
+- Dirty-value replication
+
+---
+
+## **6. Debug Tools**
+
+UMAS includes:
+
+- Console commands to inspect attribute states
+- Debug printing for effects
+- PIE-only warnings for invalid handles
+- Optional verbose logs for progression/link debugging

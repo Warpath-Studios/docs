@@ -1,0 +1,75 @@
+---
+title: "Attribute Definition"
+description: "An Attribute Definition is the blueprint of a single stat inside UMAS."
+---
+
+## **What Is an Attribute Definition?**
+
+An *Attribute Definition* is the blueprint of a single stat inside UMAS.  
+It defines:
+
+- Attribute Handle / Name
+- Base Value
+- Min/Max
+- Optional regen settings
+- Optional progression settings
+- Modifier behavior
+
+These definitions live inside an **AttributeProfile**.
+
+UMAS treats every attribute as a number, but categories and Gameplay Tags can be used to group and organize them.
+
+---
+
+## **Fields Defined in** `UAttributeDefinition`
+
+*(Summarized from the plugin source)*
+
+- **AttributeHandle**  
+  The unique FName/handle used internally to identify the attribute.
+- **BaseValue**  
+  The initial value for this attribute when the profile loads.
+- **MinValue / MaxValue**  
+  Hard clamps to ensure the attribute stays within valid bounds.
+- **bCanRegenerate**  
+  Whether the attribute supports passive regeneration.
+- **RegenRate / RegenDelay**  
+  Optional regeneration configuration.
+- **ProgressionConfig**  
+  A reference to a struct used for leveling, XP, and scaling.
+- **Tags**  
+  Optional tags used for filtering, tooltips, UI, or effect logic.
+
+---
+
+## **Runtime Data Structure**
+
+At runtime, definitions are converted into **FAttributeInstance** records stored inside the Attribute Manager Component.
+
+These instances contain:
+
+- Current Value
+- Base Value
+- Delta Modifiers
+- Active Effects
+- Cached Scaled Values
+- Flags for replication
+
+---
+
+## **Designer Notes**
+
+- Keep attribute names simple and consistent  
+  *(e.g., Health, MaxHealth, Strength, Defense).*
+- Use tags to group attributes for UI or effects.
+- For survival games, use regen settings for stamina/energy, not for health.
+- For RPGs, use progression config + link definitions for stat scaling.
+
+---
+
+## **Developer Notes**
+
+- Attribute handles are used internally as efficient lookup keys.
+- Definitions are immutable at runtime.
+- Editing the profile updates future spawns, not existing characters.
+- Use modifiers and effects to change stats at runtime.

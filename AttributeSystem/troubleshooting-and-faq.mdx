@@ -1,0 +1,99 @@
+---
+title: "Troubleshooting & FAQ"
+description: "Likely cause: Profile not assigned to the Attribute Manager."
+---
+
+## **Common Issues**
+
+### **1. Attribute returns 0**
+
+Likely cause:  
+Profile not assigned to the Attribute Manager.
+
+Fix:  
+Assign your `AttributeProfile` in the component.
+
+---
+
+### **2. Attribute not changing**
+
+Check that:
+
+- The attribute name matches the handle exactly
+- Link definitions aren't overriding it
+- An effect isn't clamping it
+- Min/Max isn’t restricting it
+
+---
+
+### **3. No attribute events firing**
+
+Ensure the attribute is marked as “Replicated” (default).  
+Ensure modification is happening **server-side**.
+
+---
+
+### **4. Effect not applying**
+
+Check:
+
+- The effect duration > 0
+- Valid magnitude
+- Instigator is valid
+- Target has an Attribute Manager Component
+
+---
+
+### **5. Level doesn’t increase**
+
+Make sure:
+
+- XP curve is assigned
+- Levels are enabled in the definition
+- MaxLevel > 1
+- XP overflow rules allow leveling
+
+---
+
+## **Debug Tools**
+
+### **Console Commands** (from EffectDebugCommands)
+
+- `umas.printattributes`
+- `umas.printeffects`
+- `umas.dumpattribute <Handle>`
+- `umas.dumpall`
+
+Great for debugging.
+
+---
+
+## **FAQ**
+
+### **Q: Does UMAS replace GAS?**
+
+No. UMAS handles stats. GAS handles abilities. They complement each other.
+
+---
+
+### **Q: Is UMAS safe for multiplayer?**
+
+Yes — everything is replicated by default.
+
+---
+
+### **Q: Can I add attributes at runtime?**
+
+Yes — C++ can register new attributes dynamically.
+
+---
+
+### **Q: Can I use curves?**
+
+Yes — XP, Leveling, and Link Definitions fully support curve assets.
+
+---
+
+### **Q: What’s the performance limit?**
+
+Hundreds of attributes and thousands of actors are supported.

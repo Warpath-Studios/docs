@@ -1,0 +1,247 @@
+---
+title: "UI Integration"
+description: "The Ultimate Multiplayer Skill System (UMSS) does not ship with any UI widgets built into the plugin."
+---
+
+The **Ultimate Multiplayer Skill System (UMSS)** does **not ship with any UI widgets built into the plugin**.
+
+Instead:
+
+- The **core plugin** provides the underlying skill logic, XP flow, leveling, replication, and Blueprint/C++ APIs.
+- The **Example Project** (optional download) includes several **sample UI widgets** that demonstrate how to build a skill menu, talent tree, and XP notifications.
+
+This page explains:
+
+- What UI comes in the Example Project
+- How the example widgets work (if you use them)
+- How to build your own UI using the Skill Component
+- How to listen for level-up and XP events
+- Best practices for multiplayer-safe UI
+
+---
+
+# 🧩 **1. UI in the Core Plugin (No UI Included)**
+
+UMSS intentionally ships with:
+
+- **NO widgets**
+- **NO popup notifications**
+- **NO pre-built XP bars**
+- **NO skill list UI**
+- **NO talent tree UI**
+
+This keeps the plugin:
+
+- Lightweight
+- Framework-agnostic
+- Compatible with any UI style
+- Easy to integrate into existing game UI
+
+Everything related to visual presentation is fully up to you.
+
+---
+
+# 🧪 **2. UI in the Example Project (Optional Showcase)**
+
+*(Only included with the Example Project, not the plugin itself)*
+
+If you imported the Example Project, it contains several widgets:
+
+### ✔ Skill List
+
+Displays all skills, levels, and XP progress.
+
+### ✔ Skill Detail Panel
+
+Shows description, parent skill, XP to next level.
+
+### ✔ Talent Tree Widget
+
+Simple node-based talent tree with prerequisites.
+
+### ✔ XP Gain Popup
+
+Shows floating text when XP is awarded or a level-up occurs.
+
+### ✔ Debug Skill Window
+
+Allows testing XP and talent unlocks during development.
+
+> ![afcf1acbf84775431fb4b6e20c3c026c.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2F2f4b319f-cff3-481d-9ee4-84ec2aa5b1e6%2Fimages%2Fafcf1acbf84775431fb4b6e20c3c026c-db2d22cd-3568-4004-a142-5dab6d29bc9e.png "afcf1acbf84775431fb4b6e20c3c026c.png")
+
+These widgets are not required — they just demonstrate best practices.
+
+---
+
+# 🔌 **3. How UI Communicates with the Skill Component**
+
+Whether using the Example Project widgets or creating your own, all UI interacts through the **Skill Component API**.
+
+Typical calls:
+
+```
+Get Skill Level (SkillTag)
+Get Current XP (SkillTag)
+Get XP Required for Next Level (SkillTag)
+Get Percent to Next Level (SkillTag)
+Get All Skills
+```
+
+Events you can bind to:
+
+- **OnSkillUpdated**
+- **OnSkillLeveledUp**
+- **OnTalentUnlocked**
+- **OnSkillsInitialized**
+
+When XP changes or talents unlock, these events fire and your UI can update instantly.
+
+---
+
+# 🎮 **4. Creating Your Own Skill UI**
+
+UMSS is designed so you can build any UI style:
+
+- Survival-style simple XP bars
+- RPG skill windows
+- MMO-style skill grids
+- Profession menus
+- Talent trees
+- Notifications
+- Debugging tools
+
+### **Typical custom UI setup:**
+
+1. Add a reference to your **Skill Component**
+2. On Construct, bind to UMSS events
+3. In your widget:
+
+   - Update text when level changes
+   - Update progress bar when XP changes
+4. Add animations for level-up (optional)
+5. Add input to open/close UI
+6. For talent trees, enable/disable node buttons based on prerequisites
+
+UMSS gives you **all the data** — you design the layout.
+
+---
+
+# 🌳 **5. Talent Tree UI (Custom-built)**
+
+If building a custom talent tree:
+
+- Pull all NodeData from the Skill Definition
+- Use NodeData to create:
+
+  - A layout (grid, vertical, radial, hex-based, etc.)
+  - Buttons or images
+  - Prerequisite locks
+- Bind each button to call:
+
+```
+Unlock Talent Node (SkillTag, NodeID)
+```
+
+### ⚠ Multiplayer Note
+
+Unlocking talents must be **server-authoritative**:
+
+- Example Project uses a Server RPC
+- Your custom UI should too
+- Clients should not modify talents directly
+
+---
+
+# 📈 **6. XP Bars & Indicators**
+
+To show XP progress:
+
+```
+Percent = SkillComponent->GetPercentToNextLevel(SkillTag)
+```
+
+To show XP text:
+
+```
+CurrentXP / RequiredXP
+```
+
+To show level:
+
+```
+Get Skill Level (SkillTag)
+```
+
+Bind these to:
+
+- Text blocks
+- Progress bars
+- Animations
+- Sound cues
+
+---
+
+# 📣 **7. XP Notifications (Optional Custom Feature)**
+
+*(Only in Example Project)*
+
+The Example Project includes a small XP popup widget showing:
+
+```
++15 XP — Logging
+Level Up! Logging 4 → 5
+```
+
+If you want this in your game:
+
+- Copy the widget into your project
+- Or create your own notification system
+- Bind to **OnSkillUpdated** and **OnSkillLeveledUp**
+
+The core plugin does not include this feature, but all necessary events are available.
+
+---
+
+# 🧭 **8. Integrating UI With Input**
+
+Most games open the skill menu when pressing a button.
+
+**Example setup (Enhanced Input):**
+
+1. Create Input Action → `IA_OpenSkills`
+2. Bind it to a key (ex: K)
+3. In Player Controller:
+
+   - Toggle visibility of your skill UI
+   - Set input mode to UI
+   - Show mouse cursor
+
+Opening UI should always be **client-side**.
+
+---
+
+# 🌐 **9. Multiplayer Considerations**
+
+### ✔ UI is always client-only
+
+Skill data replicates to each client automatically.
+
+### ✔ Runtime changes come from server
+
+Your UI responds to replicated updates — no manual sync needed.
+
+### ✔ Talent unlocks require server RPC
+
+The Example Project shows how to do this.
+
+### ✔ XP awards usually come from the server
+
+Client-side prediction is optional but not required.
+
+---
+
+# 📌 **What to Read Next**
+
+👉 [XP & Progression](/warpath-studios/umf/xp-and-progression-tjj3c1m60q-76yp5k01euv2) – Learn how XP flows and how to award it.  
+👉 [Talent Trees](/warpath-studios/umf/talent-trees-aryfhah42z-75gh2iykc61l) – Build your own branching skill tree UI.  
+👉 [Component Integration](/warpath-studios/umf/component-integration-gjewwikl10-9xqrw967vi0u) – Ensure your player has a Skill Component.

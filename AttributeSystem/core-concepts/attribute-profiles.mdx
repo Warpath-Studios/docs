@@ -1,0 +1,74 @@
+---
+title: "Attribute Profiles"
+description: "An Attribute Profile is a data asset that defines all attributes available on a character, including:"
+---
+
+## **What Is an Attribute Profile?**
+
+An Attribute Profile is a **data asset** that defines all attributes available on a character, including:
+
+- The list of Attribute Definitions
+- Starting values
+- Min/max
+- Regeneration settings
+- Progression rules
+- Level Link Definitions
+- Optional effect/calculation configuration
+
+Every character using UMAS loads one profile at startup.
+
+---
+
+## **Profile Components**
+
+The profile consists of:
+
+### **1. Attribute Definitions**
+
+The core list of attributes (Health, Stamina, Strength, Hunger, etc.)
+
+### **2. Link Definitions**
+
+Rules like:
+
+> 1 point of Strength → +5 MaxHealth
+
+These are defined using the `UAttributeLevelLinkDefinition` asset.
+
+### **3. Progression Config**
+
+Defines:
+
+- XP curves
+- Level curves
+- Attribute scaling per level
+
+### **4. Modifier Rules**
+
+Defines the order and method in which modifiers apply.
+
+---
+
+## **Assigning a Profile**
+
+It is assigned inside the `UAttributeManagerComponent`:
+
+**Field:** `AttributeProfile`
+
+At runtime the manager loads all attributes, initializes them, and applies progression or link rules.
+
+---
+
+## **Designer Notes**
+
+- Create separate profiles for different NPC types if needed.
+- For MMOs or RPGs, use multiple link definitions to organize logic.
+- Keep survival stats (Hunger, Thirst, Fatigue) in the same profile for simplicity.
+
+---
+
+## **Developer Notes**
+
+- Profiles are read-only during runtime.
+- The Attribute Manager creates runtime instances using profile data.
+- You can generate profiles in C++ if needed.

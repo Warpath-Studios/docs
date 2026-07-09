@@ -1,0 +1,88 @@
+---
+title: "Attribute Level Link Definitions"
+description: "Attribute Level Link Definitions allow designers to create automatic attribute relationships without writing code."
+---
+
+## **Purpose**
+
+Attribute Level Link Definitions allow designers to create **automatic attribute relationships** without writing code.
+
+Example:
+
+- **1 Strength → +10 MaxHealth**
+- **Every Dexterity level increases AttackSpeed**
+- **Wisdom increases Mana Regen over time**
+
+This system is the backbone of RPG-style scaling.
+
+---
+
+## **Creating a Link Definition**
+
+1. Right-click → Data Asset → `AttributeLevelLinkDefinition`
+2. Add an entry to **Links** array
+3. Configure:
+
+- Source Attribute (e.g., Strength)
+- Target Attribute (e.g., MaxHealth)
+- Operation (Add, Multiply, Override)
+- Formula or fixed magnitude
+- Triggers
+
+---
+
+## **Supported Operations**
+
+UMAS supports:
+
+- Additive (+X)
+- Multiplicative (\*X)
+- Override (set to value)
+- Curve-driven scaling
+- Percentage-of-source
+- Level-based rules
+
+Examples:
+
+- Add 10 per every level of Strength
+- Add 5% of Endurance to Defense
+- Override MaxHealth if “Vitality > 50”
+
+---
+
+## **Supported Triggers**
+
+- On source attribute value change
+- On source attribute level change
+- On profile load
+- On effect modify
+- On progression update
+
+---
+
+## **Execution Order**
+
+1. Source attribute updates
+2. Link definitions re-evaluated
+3. Target attribute recalculates
+4. Events fire
+5. Replication updates clients
+
+UMAS prevents recursive infinite loops.
+
+---
+
+## **Designer Notes**
+
+- Keep formulas simple when possible
+- Group scaling logic by category (Combat, Magic, Survival)
+- You can stack multiple link assets on one profile
+
+---
+
+## **Developer Notes**
+
+- Link rules are deterministic
+- Calculations run through the main modification engine
+- Execution is batched for performance
+- Order-of-operations mirrors GAS-style modifiers

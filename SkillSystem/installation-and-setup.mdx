@@ -1,0 +1,239 @@
+---
+title: "Installation & Setup"
+description: "This page walks you through installing the Universal Skill System (UMSS) plugin, enabling required settings, and preparing your project for skill definitio"
+---
+
+This page walks you through installing the **Universal Skill System (UMSS)** plugin, enabling required settings, and preparing your project for skill definitions, XP logic, and UI integration. UMSS is designed to be **data-driven**, **network-ready**, and **compatible with any Unreal Engine project** without requiring C++.
+
+# ⚙️ **1. Install the Plugin**
+
+### **Marketplace Install**
+
+1. Open **Epic Games Launcher**
+2. Go to **Unreal Engine → Marketplace**
+3. Search for **Ultimate Multiplayer Skill System**
+4. Click **Install to Engine**
+5. Select your engine version (UE 5.6 / 5.7)
+
+### **Project Activation**
+
+1. Open your project
+2. Go to **Edit → Plugins**
+3. Search for **Universal Skill System**
+4. Enable the plugin
+5. Restart the editor when prompted
+
+> ![9851a18201f21f4463a7d6b8e0c7048b.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2F6725c456-87b3-446f-b212-e388c7500db6%2Fimages%2F9851a18201f21f4463a7d6b8e0c7048b-1f6c40e1-6b8f-4983-83e5-43a2405f7ca3.png "9851a18201f21f4463a7d6b8e0c7048b.png")
+
+---
+
+# 📁 **2. Plugin Folder Structure (Reference)**
+
+When installed, the plugin appears under:
+
+```
+YourProject/Plugins/UMSS/
+```
+
+Inside the plugin:
+
+```
+UMSS
+ ├── Content/         (Example assets, UI, sample trees)
+ ├── Source/
+ │    ├── UMSS/       (Core runtime code)
+ │    └── UMSSEditor/ (Editor-only utilities)
+ └── Resources/       (Icons, metadata)
+```
+
+This is just a reference — customers rarely need to touch the internal folders.
+
+---
+
+# 🔧 **3. Required Project Settings**
+
+UMSS is intentionally lightweight, so setup is simple.
+
+## **3.1 Gameplay Tags (Required)**
+
+UMSS uses Gameplay Tags for:
+
+- Skill identifiers
+- XP sources
+- Talent tree connections
+- UI grouping
+- Special-case skill behavior
+
+If you don’t already have Gameplay Tags enabled:
+
+1. Go to **Edit → Project Settings → Gameplay Tags**
+2. Enable **Import Tags from Config**
+3. Enable **Fast Replication** (recommended for multiplayer)
+
+UMSS uses **Gameplay Tags** to identify skills, XP sources, talent tree nodes, and category groupings.  
+The plugin does **not** ship with any default tags — you may create whatever structure fits your project.
+
+### **Recommended Tag Categories**
+
+(You may use these examples or create your own.)
+
+```
+Skill
+Skill.Combat
+Skill.Crafting
+Skill.Gathering
+Skill.Magic
+Skill.Parent
+Skill.Child
+Skill.XP
+Skill.Pool.Default
+```
+
+These are simply suggestions.  
+**UMSS does not require any specific tag names.**
+
+> **📌 NOTE:**  
+> UMSS reads whatever tags you assign to your Skill Definitions and uses them internally for lookup, grouping, and XP routing.
+
+---
+
+# 🧩 **4. Add the Skill Component to Your Player Controller**
+
+UMSS requires your Player Controller (or Player State for persistent MMO style) to have a **USkillComponent**.
+
+### **Blueprint Setup (Recommended)**
+
+1. Open your **PlayerController Blueprint**
+2. Add a **Skill Component**
+3. Name it `SkillComponent`
+4. Compile & Save
+
+> ![4a13b106b69e8e8cd9468b4e8c3d54b3.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2F6725c456-87b3-446f-b212-e388c7500db6%2Fimages%2F4a13b106b69e8e8cd9468b4e8c3d54b3-7894096e-fb2f-4abe-8a95-a850f689f7bc.png "4a13b106b69e8e8cd9468b4e8c3d54b3.png")
+
+---
+
+### **C++ Setup (Optional)**
+
+```
+UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+TObjectPtr<USkillComponent> SkillComponent;
+
+ConstructorClass()
+{
+    SkillComponent = CreateDefaultSubobject<USkillComponent>(TEXT("SkillComponent"));
+}
+```
+
+This is all you need; the component loads skill data automatically at runtime.
+
+---
+
+# 📚 **5. Preparing Your Skill Database**
+
+UMSS uses **Primary Data Assets** to define every Skill.
+
+### **Create a Skill Definition**
+
+1. Right-click in Content Browser
+2. Create → **Primary Data Asset**
+3. Choose **Skill Definition**
+4. Name it something like:
+
+   - `DA_Skill_Swordsmanship`
+   - `DA_Skill_Farming`
+   - `DA_Skill_Magic_Fire`
+
+Each Skill needs:
+
+- Name
+- Icon
+- Max Level
+- XP Curve
+- Tags (ex: Skill.Combat)
+- Optional: Parent Skill
+- Optional: Tree Node Definition
+
+> ![c20875f9239df7f2179cf9cc081da805.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2F6725c456-87b3-446f-b212-e388c7500db6%2Fimages%2Fc20875f9239df7f2179cf9cc081da805-c9add622-c2dc-47b9-9fa9-1355c3227621.png "c20875f9239df7f2179cf9cc081da805.png")
+
+---
+
+# 🔗 **6. Link Skills to the Manager**
+
+Your SkillComponent loads skill definitions from a **Skill Manager Data Asset**.
+
+### **Setting Up the Manager**
+
+1. Create → **Primary Data Asset → Skill Manager**
+2. Open it
+3. Add all of your Skill Definitions to the list
+4. Assign the Manager to your SkillComponent:
+
+   Select **SkillComponent** →  
+   Set `Skill Manager Data` = your manager asset
+
+> ![c67a37d5ee2c45a7e2d623efe8ae6da5.png](https://api.beta.slimwiki.com/api/v1/assets/wikis%2F4f79e6be-793b-4980-99c0-f2cf0c0e6771%2Fpages%2F6725c456-87b3-446f-b212-e388c7500db6%2Fimages%2Fc67a37d5ee2c45a7e2d623efe8ae6da5-12a720ea-8645-4b56-b9e0-a9e22402e717.png "c67a37d5ee2c45a7e2d623efe8ae6da5.png")
+
+UMSS now fully knows what skills exist in the project.
+
+# 🎮 **7. Test in Play Mode**
+
+After adding the Skill Component and Manager:
+
+1. Press **Play**
+2. Open the debug window (included with plugin)
+3. Verify skills load
+4. Award XP using the example Blueprint function:
+
+   - `Award XP (Skill Tag, Amount)`
+
+---
+
+# 🧪 **8. Optional: Enable Example Content**
+
+UMSS includes usable example:
+
+- XP Award Blueprints
+- A Simple Skill UI
+- A Sample Talent Tree
+- A Combat Skill Example
+- Demo Function Library
+
+Enable it via:
+
+**Edit → Plugins → UMSS → Enable Example Content**  
+(or copy from the plugin’s Content folder)
+
+This provides a working demo out of the box.
+
+---
+
+# 🧰 **9. Optional: Multiplayer Setup**
+
+UMSS is multiplayer-ready.
+
+You only need to:
+
+- Ensure your Player State replicates
+- SkillComponent remains on the PlayerCharacter (or PlayerState)
+- Level-up effects use multicast or BP events depending on your preference
+
+A full multiplayer guide is included later in the docs.
+
+---
+
+# 🎉 **Installation Complete**
+
+At this point you can:
+
+- Create skills
+- Award XP
+- Display skill UIs
+- Build talent trees
+- Attach skill bonuses to gameplay
+- Track progression across play sessions
+
+You’re ready to move on to:
+
+👉 **System Overview**  
+👉 **Skill Definitions**  
+👉 **XP & Progression**

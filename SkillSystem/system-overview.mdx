@@ -1,0 +1,258 @@
+---
+title: "System Overview"
+description: "The Ultimate Multiplayer Skill System (UMSS) is a modular, data-driven framework for handling all forms of character progression in Unreal Engine."
+---
+
+The **Ultimate Multiplayer Skill System (UMSS)** is a modular, data-driven framework for handling all forms of character progression in Unreal Engine.  
+It is built on three core concepts:
+
+1. **Skill Component** – where skills live at runtime
+2. **Skill Definitions** – the data describing each skill
+3. **Skill Manager** – the asset that organizes all skills for the project
+
+UMSS supports XP-based progression, use-based progression, parent/child skill ecosystems, and talent tree structures — all without requiring C++.
+
+This page explains how the system fits together.
+
+---
+
+# 🔷 **1. Runtime Architecture**
+
+UMSS is built on a simple but powerful structure:
+
+```
+Player Controller
+     └── Skill Component
+              ├── Skill Instances (runtime)
+              └── Handles XP, levels, events
+```
+
+### **Skill Component**
+
+The Skill Component stores *all* skills the player has.  
+It:
+
+- Initializes skills from the Skill Manager
+- Tracks XP
+- Handles leveling rules
+- Handles replication
+- Fires level-up events
+- Provides Blueprint access (Get Level, Award XP, etc.)
+
+Every player (or Player State for MMO setups) should have one.
+
+### **Skill Instances**
+
+Each Skill at runtime becomes a **Skill Instance** containing:
+
+- Current Level
+- Current XP
+- Parent/child relationships
+- Talent tree state
+- Any active perks or unlocked nodes
+
+Instances update themselves automatically when XP changes.
+
+---
+
+# 🗂 **2. Data-Driven Structure**
+
+The system relies heavily on **Primary Data Assets** for definition.
+
+### **Skill Definition (Primary Data Asset)**
+
+Every skill in your project is defined using a Skill Definition asset.
+
+It contains:
+
+- Skill name & description
+- Icon
+- Max level
+- XP curve
+- Gameplay Tags
+- Parent skill reference (optional)
+- Talent tree node definition (optional)
+
+You can create unlimited skills, in any structure.
+
+### **Skill Manager (Primary Data Asset)**
+
+The Skill Manager contains a list of all Skill Definitions in your project.
+
+At runtime, the Skill Component loads them to create the player’s skill set.
+
+---
+
+# 🧩 **3. Skill Types**
+
+UMSS supports multiple progression types out of the box:
+
+## **3.1 XP-Based Skills**
+
+Traditional RPG or MMO-style leveling.
+
+- Award XP via combat
+- Award XP via crafting
+- Award XP via resource gathering
+- Award XP through quests
+- Award XP through UI or scripts
+
+You control the XP flow — UMSS simply handles the level logic.
+
+---
+
+## **3.2 Use-Based (Passive) Skills**
+
+Perfect for survival games or profession systems.
+
+The system lets you award XP based on **actions**, such as:
+
+- Swinging a weapon
+- Chopping a tree
+- Crafting items
+- Picking herbs
+- Running, jumping, swimming
+
+Use the Blueprint function:
+
+```
+Award XP (Skill Tag, Amount)
+```
+
+—and you have passive progression instantly.
+
+---
+
+## **3.3 Parent / Child Skills**
+
+Allows hierarchical skill systems, such as:
+
+```
+Combat
+ ├── One-Handed
+ ├── Two-Handed
+ └── Polearms
+```
+
+You decide how XP flows:
+
+- Child → Parent
+- Parent → Child
+- Independent
+- Mixed rules (custom logic supported)
+
+This is ideal for games like:
+
+- RuneScape
+- Elder Scrolls
+- Life is Feudal
+- MMO profession systems
+
+---
+
+## **3.4 Talent Tree Skills**
+
+UMSS includes a flexible tree system:
+
+- Nodes with prerequisites
+- Point costs
+- Branching support
+- Unlocking abilities or perks
+- Optional point pools
+- Optional parent-skill requirements
+
+Trees can be simple (3–5 nodes) or fully MMO-style with dozens of branches.
+
+---
+
+# 🔁 **4. Progression Pipeline**
+
+The full flow looks like this:
+
+1. An event in your game triggers an XP award
+2. The Skill Component checks the Skill Instance
+3. The XP curve determines required XP
+4. If enough XP is earned:
+
+   - Level increases
+   - Level-up events fire
+   - Talent unlock conditions update
+5. Replication syncs state across clients
+6. UI widgets update automatically
+
+UMSS does not impose *how* or *when* XP is given — the designer controls that.
+
+---
+
+# 🔌 **5. Blueprint Integration**
+
+Everything is usable via Blueprints:
+
+- Award XP
+- Get Skill Level
+- Get Current XP
+- Get Progress %
+- Unlock Talent
+- Check if Talent Node is Active
+- Listen for Level-Up Events
+
+The plugin ships with:
+
+- Example graphs
+- Debug functions
+- Sample skill UI
+
+Blueprint-only games can fully use the system.
+
+---
+
+# 🌐 **6. Multiplayer Support**
+
+UMSS is built with replication in mind:
+
+- Skill levels
+- XP
+- Talent nodes
+- UI updates
+
+All replicate correctly with:
+
+- Listen servers
+- Dedicated servers
+- Multiplayer PIE
+
+If you place the Skill Component on the **Player State**, you get long-term persistent progression across sessions (MMO style).
+
+---
+
+# 🧱 **7. Extensibility**
+
+Advanced developers can override or extend:
+
+- SkillInstance logic
+- Leveling formulas
+- XP modifiers
+- Talent node rules
+- Unlock conditions
+- Saving/loading patterns
+- Custom skill behavior
+
+Everything is exposed in Blueprint and C++.
+
+---
+
+# 📌 **What to Read Next**
+
+To get started defining skills:
+
+👉 [Skill Definitions](/warpath-studios/umf/skill-definitions-t0csmlc09h-rigi0zrtcd54)  
+Understand the data structure for creating skills.
+
+To set up XP flow:
+
+👉 [XP & Progression](/warpath-studios/umf/xp-and-progression-tjj3c1m60q-76yp5k01euv2)  
+Learn how to award XP and control leveling.
+
+To build a talent tree:
+
+👉 [Talent Trees](/warpath-studios/umf/talent-trees-aryfhah42z-75gh2iykc61l)

@@ -9,9 +9,16 @@
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "tabs": [
+    "pages": [
       {
-        "tab": "Inventory System",
+        "group": "Getting Started",
+        "pages": [
+          "index",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Inventory System",
         "pages": [
           "InventorySystem/index",
           {
@@ -177,55 +184,184 @@
         ]
       },
       {
-        "tab": "Attribute System",
+        "group": "Foliage System",
         "pages": [
-          "AttributeSystem/index",
-          "AttributeSystem/installation-and-setup",
+          "FoliageSystem/index",
+          "FoliageSystem/how-it-works",
+          "FoliageSystem/integration-with-umi",
+          "FoliageSystem/setup-instructions",
+          "FoliageSystem/using-the-plugin",
+          "FoliageSystem/limitations",
+          "FoliageSystem/faq",
+          "FoliageSystem/troubleshooting"
+        ]
+      }
+    ],
+    "tabs": [
+      {
+        "tab": "Inventory System",
+        "pages": [
+          "InventorySystem/index",
+          {
+            "group": "Installation & Setup",
+            "pages": [
+              "InventorySystem/installation-setup/plugin-installation",
+              "InventorySystem/installation-setup/required-settings",
+              "InventorySystem/installation-setup/adding-components-to-your-player",
+              "InventorySystem/installation-setup/asset-manager-configuration"
+            ]
+          },
           {
             "group": "Core Concepts",
             "pages": [
-              "AttributeSystem/core-concepts/index",
-              "AttributeSystem/core-concepts/attribute-definition",
-              "AttributeSystem/core-concepts/attribute-profiles",
-              "AttributeSystem/core-concepts/attribute-manager-component",
-              "AttributeSystem/core-concepts/effect-system",
-              "AttributeSystem/core-concepts/leveling-and-progression",
-              "AttributeSystem/core-concepts/attribute-level-link-definitions",
-              "AttributeSystem/core-concepts/subsystems"
+              "InventorySystem/core-concepts/item-ids",
+              "InventorySystem/core-concepts/item-definitions",
+              "InventorySystem/core-concepts/item-instances",
+              "InventorySystem/core-concepts/stacking-and-rules",
+              "InventorySystem/core-concepts/world-vs-inventory-items"
             ]
           },
-          "AttributeSystem/creating-an-attribute-profile",
-          "AttributeSystem/working-with-attributes-in-blueprint",
-          "AttributeSystem/working-with-attributes-in-cplusplus",
-          "AttributeSystem/gas-optional",
-          "AttributeSystem/attribute-level-link-definitions",
-          "AttributeSystem/advanced-topics",
-          "AttributeSystem/example-project",
-          "AttributeSystem/troubleshooting-and-faq",
-          "AttributeSystem/changelog"
-        ]
-      },
-      {
-        "tab": "Skill System",
-        "pages": [
-          "SkillSystem/index",
-          "SkillSystem/installation-and-setup",
-          "SkillSystem/system-overview",
-          "SkillSystem/skill-definitions",
-          "SkillSystem/xp-and-progression",
-          "SkillSystem/component-integration",
           {
-            "group": "Example Implementations",
+            "group": "Crafting System",
             "pages": [
-              "SkillSystem/example-implementations/index",
-              "SkillSystem/example-implementations/using-the-example-project"
+              "InventorySystem/crafting-system/index",
+              "InventorySystem/crafting-system/tool-requirements",
+              "InventorySystem/crafting-system/spawn-direct",
+              "InventorySystem/crafting-system/multi-slot-crafting"
             ]
           },
-          "SkillSystem/ui-integration",
-          "SkillSystem/talent-trees",
-          "SkillSystem/extending-the-system",
-          "SkillSystem/troubleshooting",
-          "SkillSystem/changelog"
+          {
+            "group": "Equipment System",
+            "pages": [
+              "InventorySystem/equipment-system/index",
+              "InventorySystem/equipment-system/quick-start-with-characterequipmentsetup",
+              "InventorySystem/equipment-system/creating-equipment-slots",
+              "InventorySystem/equipment-system/equipping-and-unequipping-items",
+              "InventorySystem/equipment-system/equipment-rules-and-validation",
+              "InventorySystem/equipment-system/visual-mesh-replacement",
+              "InventorySystem/equipment-system/querying-equipped-items",
+              "InventorySystem/equipment-system/events",
+              "InventorySystem/equipment-system/item-charges-ammo-durability",
+              "InventorySystem/equipment-system/integration-with-gameplay-abilities",
+              "InventorySystem/equipment-system/multiplayer-considerations",
+              "InventorySystem/equipment-system/best-practices"
+            ]
+          },
+          {
+            "group": "Hotbar & Quick Actions",
+            "pages": [
+              "InventorySystem/hotbar-quick-actions/index",
+              "InventorySystem/hotbar-quick-actions/adding-the-hotbar-component",
+              "InventorySystem/hotbar-quick-actions/assigning-items",
+              "InventorySystem/hotbar-quick-actions/activating-items",
+              "InventorySystem/hotbar-quick-actions/auto-refill-system",
+              "InventorySystem/hotbar-quick-actions/slot-selection-and-scrolling",
+              "InventorySystem/hotbar-quick-actions/moving-and-swapping-items",
+              "InventorySystem/hotbar-quick-actions/cooldown-management",
+              "InventorySystem/hotbar-quick-actions/ui-integration",
+              "InventorySystem/hotbar-quick-actions/examples"
+            ]
+          },
+          {
+            "group": "Interaction System",
+            "pages": [
+              "InventorySystem/interaction-system/index",
+              "InventorySystem/interaction-system/world-item-actors",
+              "InventorySystem/interaction-system/interaction-prompts",
+              "InventorySystem/interaction-system/custom-interactables"
+            ]
+          },
+          {
+            "group": "Inventory Component",
+            "pages": [
+              "InventorySystem/inventory-component/index",
+              "InventorySystem/inventory-component/adding-to-characters",
+              "InventorySystem/inventory-component/storage-and-slots",
+              "InventorySystem/inventory-component/events-and-delegates",
+              "InventorySystem/inventory-component/blueprint-examples",
+              "InventorySystem/inventory-component/replication-and-multiplayer",
+              {
+                "group": "Adding & Removing Items",
+                "pages": [
+                  "InventorySystem/inventory-component/adding-removing-items/index",
+                  "InventorySystem/inventory-component/adding-removing-items/adding-items",
+                  "InventorySystem/inventory-component/adding-removing-items/removing-items",
+                  "InventorySystem/inventory-component/adding-removing-items/using-items",
+                  "InventorySystem/inventory-component/adding-removing-items/weight-encumbrance",
+                  "InventorySystem/inventory-component/adding-removing-items/container-restrictions",
+                  "InventorySystem/inventory-component/adding-removing-items/sorting-system",
+                  "InventorySystem/inventory-component/adding-removing-items/transferring-items",
+                  "InventorySystem/inventory-component/adding-removing-items/dropping-items"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Loot System",
+            "pages": [
+              "InventorySystem/loot-system/index",
+              "InventorySystem/loot-system/loot-tables",
+              "InventorySystem/loot-system/loot-component",
+              "InventorySystem/loot-system/decay-system",
+              "InventorySystem/loot-system/resource-harvesting-integration",
+              "InventorySystem/loot-system/respawn-manager-integration",
+              "InventorySystem/loot-system/rarity-system",
+              "InventorySystem/loot-system/more-examples"
+            ]
+          },
+          {
+            "group": "Merchant System",
+            "pages": [
+              "InventorySystem/merchant-system/index",
+              "InventorySystem/merchant-system/architecture",
+              "InventorySystem/merchant-system/core-concepts",
+              "InventorySystem/merchant-system/configuration",
+              "InventorySystem/merchant-system/quick-start",
+              "InventorySystem/merchant-system/currency-system",
+              "InventorySystem/merchant-system/api-reference",
+              "InventorySystem/merchant-system/transaction-flow",
+              "InventorySystem/merchant-system/pricing-system",
+              "InventorySystem/merchant-system/persistence",
+              "InventorySystem/merchant-system/best-practices",
+              "InventorySystem/merchant-system/examples",
+              "InventorySystem/merchant-system/troubleshooting",
+              "InventorySystem/merchant-system/performance-considerations"
+            ]
+          },
+          {
+            "group": "Respawn Manager",
+            "pages": [
+              "InventorySystem/respawn-manager/index",
+              "InventorySystem/respawn-manager/core-concepts",
+              "InventorySystem/respawn-manager/getting-started",
+              "InventorySystem/respawn-manager/blueprint-integration",
+              "InventorySystem/respawn-manager/c-integration",
+              "InventorySystem/respawn-manager/use-with-lootcomponent",
+              "InventorySystem/respawn-manager/use-with-foliage",
+              "InventorySystem/respawn-manager/advanced-topics",
+              "InventorySystem/respawn-manager/api-reference",
+              "InventorySystem/respawn-manager/example-implementations"
+            ]
+          },
+          {
+            "group": "Saving & Loading",
+            "pages": [
+              "InventorySystem/saving-loading/index",
+              "InventorySystem/saving-loading/serialization-structures",
+              "InventorySystem/saving-loading/playerprofile-integration",
+              "InventorySystem/saving-loading/saving",
+              "InventorySystem/saving-loading/loading",
+              "InventorySystem/saving-loading/bucket-organization",
+              "InventorySystem/saving-loading/implementing-custom-saveables",
+              "InventorySystem/saving-loading/save-backend",
+              "InventorySystem/saving-loading/performance",
+              "InventorySystem/saving-loading/troubleshooting"
+            ]
+          },
+          "InventorySystem/extending-umi",
+          "InventorySystem/troubleshooting-and-faq",
+          "InventorySystem/example-project",
+          "InventorySystem/changelog"
         ]
       },
       {

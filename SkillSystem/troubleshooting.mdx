@@ -1,0 +1,320 @@
+---
+title: "Troubleshooting"
+description: "This page covers the most common issues developers encounter when setting up or extending the Ultimate Multiplayer Skill System (UMSS)."
+---
+
+This page covers the most common issues developers encounter when setting up or extending the **Ultimate Multiplayer Skill System (UMSS)**.  
+Each problem includes symptoms, likely causes, and exact steps to fix it.
+
+If your issue isn’t listed, check the **Output Log**, verify replication settings, and ensure your Skill Manager and Skill Component are correctly assigned.
+
+---
+
+# ❗ **1. No Skills Are Appearing In-Game**
+
+### **Symptoms:**
+
+- Skill list is empty
+- No XP can be awarded
+- No level-up events fire
+
+### **Causes & Fixes:**
+
+**A. Skill Manager was not assigned**
+
+- Select your PlayerController → Skill Component
+- Ensure **Skill Manager Data** is set to your `DA_SkillManager`
+
+**B. Skill Manager contains no Skill Definitions**
+
+- Open your `DA_SkillManager`
+- Add your Skill Definition assets to the Skills array
+
+**C. Skill Definitions missing Gameplay Tags**
+
+UMSS requires a unique tag per skill.  
+Missing tags = missing skills.
+
+**D. Component was placed on PlayerCharacter instead of PlayerController**
+
+If the Character respawned, the component reset.
+
+**Fix:** Move Skill Component to PlayerController.
+
+---
+
+# ❗ **2. XP Isn’t Increasing When Awarded**
+
+### **Symptoms:**
+
+- AwardXP calls do nothing
+- XP value remains 0
+- Skill never levels up
+
+### **Causes & Fixes:**
+
+**A. AwardXP called on the client**
+
+UMSS processes XP **server-side only**.
+
+**Fix:**
+
+- Call XP system via a **Server RPC** OR
+- Ensure the event originates from the server (combat, crafting, interaction, etc.)
+
+**B. SkillTag mismatches**
+
+- Ensure the Gameplay Tag you pass into AwardXP **exactly matches** the Skill Definition’s tag
+- Tag mismatch = silent failure
+
+**C. Skill not found**
+
+If the Skill Manager doesn’t list the skill, XP goes nowhere.
+
+---
+
+# ❗ **3. Level Doesn’t Increase Even When XP Goes Up**
+
+### **Symptoms:**
+
+- XP increases
+- Level stays at 1
+- Or never passes level X
+
+### **Causes & Fixes:**
+
+**A. XP Curve too high**
+
+If required XP is 2500 and you’re awarding 5, it’ll feel stuck.
+
+Check Skill Definition → XP Curve.
+
+**B. Level cap reached**
+
+Skill Definition → Max Level.
+
+**C. No XP carryover**
+
+If you manually modified XP logic, ensure leftover XP is preserved.
+
+UMSS handles this automatically unless you override it.
+
+---
+
+# ❗ **4. Skill Data Resets After Respawn**
+
+### **Symptoms:**
+
+- Player dies → all skills reset
+- Character change resets progression
+
+### **Cause:**
+
+Skill Component was put on **PlayerCharacter**.
+
+### **Fix:**
+
+Place Skill Component on **PlayerController** (recommended) or **PlayerState** (advanced MMO setups).
+
+---
+
+# ❗ **5. Custom Talent/Perk Nodes Not Unlocking**
+
+### **Symptoms:**
+
+- Button presses do nothing
+- Node unlocks fail silently
+
+### **Causes & Fixes:**
+
+**A. UnlockNode called on the client**
+
+UMSS requires server-authority unlocks.
+
+**Fix:**  
+Client → Server RPC → Server calls UnlockNode
+
+**B. Node ID mismatch**
+
+The NodeID string must match the Skill Definition exactly.
+
+**C. Missing metadata**
+
+If your Skill Definition has no node metadata, UMSS has nothing to unlock.
+
+**D. Prerequisites not satisfied**
+
+Your metadata rules are designer-defined — double-check the prereq array.
+
+---
+
+# ❗ **6. UI Not Updating / Stuck Values**
+
+### **Symptoms:**
+
+- XP bar stuck
+- Level number not changing
+- Talent tree buttons not refreshing
+
+### **Causes & Fixes:**
+
+**A. UI not bound to Skill Component events**
+
+Ensure widgets listen to:
+
+- OnSkillsInitialized
+- OnSkillUpdated
+- OnSkillLeveledUp
+- OnNodeUnlocked (if used)
+
+**B. UI created in the wrong place**
+
+UI should be created on the **client**, not the server.
+
+**C. Wrong Skill Component reference**
+
+Widgets should read:
+
+```
+Get Owning Player → Get PlayerController → Get SkillComponent
+```
+
+---
+
+# ❗ **7. Multiplayer: Client Sees No Skills or XP**
+
+### **Symptoms:**
+
+- Server works
+- Clients see empty lists
+- XP on client stays at 0
+
+### **Causes & Fixes:**
+
+**A. Component not set to replicate**
+
+Skill Component is already replication-aware, but **PlayerController must be replicated**.
+
+Verify:
+
+- Game Mode uses a PlayerController blueprint
+- Using Listen/Dedicated Server mode
+- Skills initialize after possession (OnSkillsInitialized event)
+
+**B. XP awarded client-side**
+
+Server must handle XP.
+
+**C. Missing replicated Skill Manager**
+
+Make sure the Skill Manager is assigned on the server before BeginPlay.
+
+---
+
+# ❗ **8. AwardXP Produces Log Errors**
+
+### **Symptoms:**
+
+- Log shows “Skill not found”
+- XP silently ignored
+
+### **Fixes:**
+
+- Check SkillTag spelling
+- Confirm the skill exists in the Skill Manager
+- Confirm Gameplay Tags are loaded via Project Settings
+- Ensure AwardXP is not called before **OnSkillsInitialized**
+
+---
+
+# ❗ **9. Skill Levels Save Incorrectly (or Not at All)**
+
+UMSS **does not** include a save system.  
+You must implement your own.
+
+### **Fix:**
+
+- Save SkillTag, XP, Level (and node unlocks if used)
+- Restore them *after* OnSkillsInitialized
+- Call Refresh/OnUpdated events to update UI
+
+---
+
+# ❗ **10. Parent/Child XP Not Behaving as Expected**
+
+UMSS does not enforce any XP inheritance rules.
+
+### Common mistakes:
+
+**A. Expecting automatic parent XP flow**
+
+UMSS **does not** automatically push XP into parents or children.
+
+**Fix:**  
+Add custom logic:
+
+```
+AwardXP(SkillTag.Child, Amount)
+AwardXP(SkillTag.Parent, Amount * 0.5)
+```
+
+**B. Multiple parents**
+
+UMSS supports one parent per SkillDefinition unless you build your own multi-parent logic.
+
+---
+
+# ❗ **11. Skill Manager Errors on Load**
+
+### Symptoms:
+
+- Warnings or errors at begin play
+- Skills not initializing
+
+### Causes:
+
+- Skill Manager assigned but contains *invalid* references (deleted assets)
+- Skill Definitions missing Required fields (Gameplay Tag)
+- Multiple Skill Managers in world (rare; shouldn’t happen)
+
+**Fix:**  
+Clean up Skill Manager entries.
+
+---
+
+# ❗ **12. “Nothing Happens” When Testing Example Project UI**
+
+### **Cause:**
+
+You’re running the core plugin only — **UMSS ships with zero UI**.
+
+### **Fix:**
+
+Make sure you imported the **Example Project** content.
+
+---
+
+# 🧭 **Summary Checklist**
+
+Before reporting a bug, verify:
+
+- ✔ Skill Component is on PlayerController (or PlayerState for advanced users)
+- ✔ Skill Manager assigned
+- ✔ Skill Manager contains Skill Definitions
+- ✔ Each Skill Definition has a unique Gameplay Tag
+- ✔ XP awarded **on the server**
+- ✔ UnlockNode called **on the server**
+- ✔ UI listens to events
+- ✔ Gameplay Tags system enabled
+- ✔ OnSkillsInitialized is completed before updating UI
+
+---
+
+# 📌 Need More Help?
+
+If issues persist:
+
+- Check the Output Log
+- Verify your Skill Manager setup
+- Compare against the Example Project
+- Send a support email with screenshots and repro steps

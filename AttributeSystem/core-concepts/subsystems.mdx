@@ -1,0 +1,49 @@
+---
+title: "Subsystems"
+description: "UMAS contains two optional subsystems:"
+---
+
+UMAS contains two optional subsystems:
+
+---
+
+## **1. AttributeCalcSubsystem**
+
+Handles global calculations.
+
+Responsibilities:
+
+- Provide a global location for custom calculations
+- Allow mods and child systems to register dynamic logic
+- Compute advanced magnitude formulas
+- Cache frequently used calculations for speed
+
+Most users will never touch this directly.
+
+---
+
+## **2. EffectSystemSubsystem**
+
+Tracks global effect instances.
+
+Responsibilities:
+
+- Tick world-based effects
+- Coordinate cross-actor effect behavior
+- Provide global cleanup
+- Support async operations (later expansion)
+
+---
+
+## **Designer Notes**
+
+- You do **not** need to reference these in normal workflows.
+- Advanced users may plug in global modifiers or formula libraries.
+
+---
+
+## **Developer Notes**
+
+- Subsystems follow Unreal’s standard subsystem lifecycle.
+- Fully multiplayer safe.
+- Lightweight — only activated when used.

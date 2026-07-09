@@ -1,0 +1,107 @@
+---
+title: "Core Concepts"
+description: "This page gives the designer-level description."
+---
+
+This page gives the designer-level description.  
+Deeper technical details appear in Section 2.
+
+---
+
+## **1. Attribute Definitions**
+
+A single attribute (Health, Stamina, AttackPower) is defined using:
+
+- An Attribute Name / Handle
+- Base Value
+- Min/Max
+- Optional Regeneration
+- Optional Progression
+
+Attributes are stored in the AttributeProfile.
+
+---
+
+## **2. Attribute Profiles**
+
+A Profile is a data asset containing:
+
+- A list of Attribute Definitions
+- Leveling / progression configuration
+- Link Definitions (STR increases MaxHealth, etc.)
+- Optional effect or calculation rules
+
+A character loads one profile at startup.
+
+---
+
+## **3. Attribute Manager Component**
+
+The runtime system responsible for:
+
+- Storing attribute values
+- Replication
+- Applying modifiers
+- Processing active effects
+- Applying link definitions
+- Providing Blueprint and C++ access
+- Triggering events when attributes change
+
+This is the core of UMAS.
+
+---
+
+## **4. Effects & Calculations**
+
+UMAS includes an optional effect model similar to lightweight GAS:
+
+- Effects can modify attributes temporarily
+- Effects have magnitude, duration, period, and tags
+- Calculations determine how modifiers apply
+- Multiple modifier types (Add, Multiply, Override, etc.)
+
+Effects are managed by the **EffectManagerComponent**, which is included inside the Attribute Manager.
+
+---
+
+## **5. Leveling & Progression**
+
+UMAS includes a progression framework:
+
+- Attributes can gain XP
+- Attributes can have levels
+- Leveling can scale attribute values
+- Level Link Definitions allow auto-scaling rules between attributes  
+  (e.g., every 1 STR adds +10 MaxHealth)
+
+This system is fully data-driven.
+
+---
+
+## **6. Subsystems**
+
+UMAS exposes two optional subsystems:
+
+### **AttributeCalcSubsystem**
+
+Handles global calculations.
+
+### **EffectSystemSubsystem**
+
+Tracks global effect instances.
+
+Most projects do not need to touch these directly, but they power advanced use cases.
+
+---
+
+## **7. Blueprint & C++ Access**
+
+UMAS is built to be used easily in either Blueprint or C++.
+
+Common Blueprint actions:
+
+- Get Attribute Value
+- Modify Attribute
+- Apply Effect
+- Listen for Attribute Change
+- Add XP / Add Level

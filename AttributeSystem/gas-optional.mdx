@@ -1,0 +1,139 @@
+---
+title: "GAS (Optional)"
+description: "UMAS works independently of Unreal’s Gameplay Ability System, but it can also layer on top of GAS or feed into GAS attributes depending on your project nee"
+---
+
+## **Overview**
+
+UMAS works independently of Unreal’s Gameplay Ability System, but it can also **layer on top of GAS** or **feed into GAS attributes** depending on your project needs.
+
+UMAS → GAS integration is **optional**, lightweight, and unintrusive.
+
+This page explains how to:
+
+- Use UMAS as your main attribute system while GAS handles abilities
+- Map UMAS attributes into GAS’s Attribute Sets
+- Trigger UMAS changes from GAS gameplay effects
+- Trigger GAS abilities based on UMAS attribute changes
+
+---
+
+## **Integration Patterns**
+
+### **Pattern 1 — UMAS as the Primary Attribute System (Recommended)**
+
+GAS handles:
+
+- Ability activation
+- Gameplay cues
+- Cooldowns
+- Costs
+- Combo systems
+- Skillshots
+- Replicated montage events
+
+UMAS handles:
+
+- Stats
+- Scaling
+- Buffs/debuffs
+- Modifiers
+- Leveling
+- Effects
+
+Why this works well:
+
+- UMAS has a more flexible data-driven stat system
+- GAS retains its best features without duplicating stats
+- No need to use GAS AttributeSet replication
+
+---
+
+### **Pattern 2 — Hybrid Mode**
+
+Some attributes live in UMAS, some in GAS.
+
+Use this if:
+
+- You already have a GAS AttributeSet (e.g., for MMO abilities)
+- But want UMAS for item-based stats, survival stats, or leveling
+
+UMAS→GAS bridge can update GAS attributes:
+
+```
+UAbilitySystemComponent->SetNumericAttributeBase(HealthProperty, UMAS_Health);
+```
+
+---
+
+### **Pattern 3 — Full GAS Attribute Mirroring**
+
+If your game already heavily uses GAS, you can forward UMAS events:
+
+- OnAttributeChanged → ApplyGameplayEffect
+- OnLevelUp → ActivateAbility
+- UMAS effects → Convert to GE specs
+
+This is the least common pattern but fully supported.
+
+---
+
+## **Connecting UMAS to GAS**
+
+### **1. Get GAS Component**
+
+```
+UAbilitySystemComponent* ASC = FindComponentByClass<UAbilitySystemComponent>();
+```
+
+### **2. Bind UMAS Attribute Changes**
+
+```
+Attr->OnAttributeChangedNative.AddUObject(this, &ThisClass::SyncToGAS);
+```
+
+### **3. Write a Sync Function**
+
+```
+void AMyChar::SyncToGAS(FName Name, float NewVal)
+{
+    if (Name == "Health")
+        ASC->SetNumericAttributeBase(UYourSet::GetHealthAttribute(), NewVal);
+}
+```
+
+---
+
+## **Using UMAS Effects With GAS Cues**
+
+UMAS effects can trigger GAS cues:
+
+- Apply VFX
+- Apply SFX
+- Apply animations
+- Apply hit reactions
+
+In Blueprint or C++:
+
+```
+ASC->ExecuteGameplayCue(CueTag);
+```
+
+You can tag UMAS effects with GAS cue tags.
+
+---
+
+## **Designer Notes**
+
+- Use UMAS for “permanent” stats
+- Use GAS for instant gameplay moment reactions
+- Keep stat logic in one place (UMAS) to avoid fragmentation
+
+---
+
+## **Developer Notes**
+
+- UMAS is not dependent on GAS
+- GAS AttributeSets are optional
+- Syncing is unidirectional unless you choose otherwise
+- UMAS scaling + GAS abilities is a powerful combo

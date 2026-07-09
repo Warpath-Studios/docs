@@ -1,0 +1,90 @@
+---
+title: "Installation & Setup"
+description: "1."
+---
+
+## **1. Install the Plugin**
+
+1. Place the plugin folder **UMAS** into:
+
+   - `YourProject/Plugins/` (recommended)
+   - or `Engine/Plugins/` (not recommended)
+2. Open your project → enable **Universal Attribute System**.
+3. Restart the editor.
+
+---
+
+## **2. Required Modules**
+
+UMAS contains the following internal modules:
+
+- **UMAS (Core Module)**  
+  Contains attributes, effects, profiles, and component logic.
+
+You do *not* need to modify your Build.cs unless writing C++ integrations.
+
+---
+
+## **3. Add the Attribute Manager to Your Character**
+
+UMAS requires a single component added to characters or actors:
+
+### `UAttributeManagerComponent`
+
+Add it in one of two ways:
+
+### **Blueprint**
+
+1. Open your Character Blueprint
+2. Add Component → **Attribute Manager Component**
+3. Compile & Save
+
+### **C++**
+
+```
+UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+UAttributeManagerComponent* AttributeManager;
+```
+
+In constructor:
+
+```
+AttributeManager = CreateDefaultSubobject<UAttributeManagerComponent>(TEXT("AttributeManager"));
+```
+
+---
+
+## **4. Assign an Attribute Profile**
+
+Every character must have a profile that defines:
+
+- The list of attributes
+- Base/min/max values
+- Leveling & progression rules
+- Optional link definitions
+
+In the **AttributeManagerComponent**:
+
+Field: **AttributeProfile**  
+→ Select your data asset.
+
+---
+
+## **5. Multiplayer Setup**
+
+UMAS is **fully replicated by default**.
+
+No additional setup is required.
+
+For custom actors:
+
+- Ensure the actor is replicated
+- Ensure the component replicates (it does by default)
+
+---
+
+## **6. Optional: Enable Debug Tools**
+
+Several debug commands exist for viewing attributes and effects at runtime.
+
+(Full list in the Troubleshooting section.)

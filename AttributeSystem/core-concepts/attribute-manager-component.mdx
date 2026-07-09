@@ -1,0 +1,123 @@
+---
+title: "Attribute Manager Component"
+description: "The Attribute Manager Component (AMC) is the heart of UMAS."
+---
+
+## **What Is It?**
+
+The **Attribute Manager Component** (AMC) is the heart of UMAS.
+
+It is responsible for:
+
+- Initializing attributes
+- Storing current values
+- Handling replication
+- Applying modifiers
+- Processing effects
+- Managing leveling + XP
+- Triggering change events
+- Handling link definitions
+- Interfacing with subsystems
+
+If you understand the AMC, you understand UMAS.
+
+---
+
+## **Key Responsibilities**
+
+### **1. Attribute Storage**
+
+The AMC stores all live attributes in a highly optimized map.
+
+Each attribute includes:
+
+- Current Value
+- Base Value
+- Pending modifiers
+- Active effects
+- Replication flags
+
+---
+
+### **2. Attribute Modification**
+
+The component provides safe modification functions:
+
+- Add to value
+- Subtract
+- Multiply
+- Override
+- Clamp
+
+All changes flow through a unified internal pipeline, ensuring:
+
+- Proper replication
+- Correct modifier order
+- Post-modification events
+- Link definitions re-evaluated
+
+---
+
+### **3. Active Effects**
+
+Effects are applied through the AMC (via nested Effect Manager):
+
+- Add a timed buff
+- Debuff
+- Periodic regen or drain
+- Foundational for RPG/MMO systems
+
+---
+
+### **4. Leveling / XP**
+
+The AMC handles:
+
+- Adding XP
+- Leveling
+- Progression curves
+- Applying scaled values
+
+This enables a smooth passive progression system.
+
+---
+
+### **5. Events & Delegates**
+
+The AMC broadcasts events for:
+
+- OnAttributeChanged
+- OnAttributeZero
+- OnAttributeIncreased
+- OnAttributeDecreased
+- OnLevelUp
+- OnXPChanged
+
+Designers can hook into these easily in Blueprint.
+
+---
+
+### **6. Replication**
+
+The system replicates attributes efficiently:
+
+- Only dirty values replicate
+- Batching minimizes RPC overhead
+- Can support hundreds of attributes
+
+---
+
+## **Designer Notes**
+
+- Only one AMC is needed per character.
+- You rarely touch subsystems directly.
+- Use Profile → Manager → Gameplay flow.
+
+---
+
+## **Developer Notes**
+
+- Core logic lives in `CapacityModificationEngine` and `EffectManagerComponent`.
+- Many operations are template-driven for speed.
+- Attribute maps use handles rather than strings for performance.
+- Designed to play nicely with GAS, but does not depend on it.

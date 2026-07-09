@@ -1,0 +1,256 @@
+---
+title: "Example Project"
+description: "Everything is located under:"
+---
+
+## The Attribute System example project is included to demonstrate the practical use of UMAS in both Blueprint and Data-Driven workflows. It is intentionally simple, clean, and easy to extend.
+
+Everything is located under:
+
+```
+Content/AttributeSystem/
+```
+
+---
+
+# 📁 **Folder Structure**
+
+Here is the exact structure from your project:
+
+```
+AttributeSystem/
+ ├── Blueprints/
+ │    ├── Examples/
+ │    │    └── BP_TestBoxes.uasset
+ │    ├── GM_Sandbox_Attributes.uasset
+ │    └── PC_Sandbox_Attributes.uasset
+ │
+ ├── CBP_SandboxCharacter_Attrubutes.uasset
+ │
+ ├── CurveTables/
+ │    ├── CT_AttributeAmounts.uasset
+ │    ├── CT_AttributeCost.uasset
+ │    ├── CT_AttributeCost_B.uasset
+ │
+ ├── Data/
+ │    ├── DA_Agility.uasset
+ │    ├── DA_CurrentHealth.uasset
+ │    ├── DA_CurrentHunger.uasset
+ │    ├── DA_CurrentStamina.uasset
+ │    ├── ... many more Attribute Definitions ...
+ │    ├── DE_HealthBuff.uasset
+ │
+ ├── IMC_Sandbox_Attributes.uasset
+ │
+ ├── LevelLinks/
+ │    └── LL_Strength.uasset
+ │
+ ├── Map/
+ │    └── DemoMap_Attributes.umap
+ │
+ └── UI/
+      ├── Textures/
+      │    ├── Icon_MinusSign.uasset
+      │    └── Icon_PlusSign.uasset
+      ├── WBP_AttributeAmount.uasset
+      ├── WBP_AttributeAmountMax.uasset
+      ├── WBP_AttributeBar.uasset
+      ├── WBP_AttributePanel.uasset
+      ├── WBP_HealthBar.uasset
+      └── WBP_HUD.uasset
+```
+
+---
+
+# 🧩 **Folder-by-Folder Explanation**
+
+---
+
+## 📘 **Blueprints /**
+
+This folder contains **all Blueprint logic** for the example project.
+
+### Key files:
+
+### **GM\_Sandbox\_Attributes**
+
+Example GameMode enabling the attribute sandbox functionality.
+
+### **PC\_Sandbox\_Attributes**
+
+PlayerController handling input and UI toggles.
+
+### **Examples/BP\_TestBoxes**
+
+A set of interactable boxes used in the demo map to show:
+
+- Increase Attribute
+- Decrease Attribute
+- Apply Buff
+- Apply Effect
+- Show event-driven UI updates
+
+These are the “test stations” players walk up to in the demo.
+
+### **CBP\_SandboxCharacter\_Attrubutes.uasset**
+
+The main example character.  
+Demonstrates:
+
+- AttributeManagerComponent setup
+- Profile assignment
+- Damage / healing
+- Attribute event binding
+- Integration with HUD
+
+**This is the most important example asset.**
+
+---
+
+## 📈 **CurveTables /**
+
+UMAS uses curves to demonstrate:
+
+- Attribute amount progression
+- Attribute cost scaling
+- Multiple versions of cost curves
+
+Included:
+
+- **CT\_AttributeAmounts**
+- **CT\_AttributeCost**
+- **CT\_AttributeCost\_B**
+
+These drive the example leveling + cost demonstrations.
+
+---
+
+## 📦 **Data /**
+
+This is the heart of the example project:  
+**The Attribute Definitions & Effects.**
+
+### Attribute Definitions
+
+Every attribute is a separate `.uasset`:
+
+- Agility
+- Health
+- Hunger
+- Stamina
+- Strength
+- Defense
+- Etc.
+
+These files demonstrate:
+
+- Base / max values
+- Regen settings
+- Progression setups
+- Tags for filtering
+- Consistent naming conventions
+
+### Effects
+
+`DE_HealthBuff.uasset`
+
+Shows how to:
+
+- Define a buff
+- Add magnitude
+- Set duration
+- Apply via Blueprint
+- Trigger UI and event changes
+
+---
+
+## 🔗 **LevelLinks /**
+
+Contains link definition assets such as:
+
+- **LL\_Strength.uasset**
+
+This asset demonstrates:
+
+- 1 Strength → increases another attribute
+- Automatic stat scaling
+- Real-time updating when strength changes
+
+This is how RPG stat systems are built.
+
+---
+
+## 🗺 **Map /**
+
+Contains your example level:
+
+### **DemoMap\_Attributes.umap**
+
+This is the sandbox environment.
+
+Features include:
+
+- Test boxes for modifying attributes
+- HUD elements showing real-time updates
+- Example character spawn
+- Debug widgets
+- Interactable objects for applying effects
+- Simple layout to stay readable
+
+Users load this map to test **everything**.
+
+---
+
+## 🖥 **UI /**
+
+All UI/UMG examples:
+
+### Key Widgets:
+
+- **WBP\_AttributeBar** – single-bar UI example
+- **WBP\_AttributeAmount** – value display
+- **WBP\_AttributeAmountMax** – current/max format
+- **WBP\_AttributePanel** – full stat list
+- **WBP\_HealthBar** – example health bar
+- **WBP\_HUD** – hooked to SandboxCharacter
+
+### Textures:
+
+- Plus/minus icons used for UI buttons or indicators
+
+These widgets demonstrate:
+
+- How to bind attribute value updates
+- How to react to OnAttributeChanged events
+- How to structure scalable UI
+- How to use multiple attributes in one display
+
+---
+
+# 🎮 **How to Run the Example Project**
+
+1. Open **DemoMap\_Attributes.umap**
+2. Press Play
+3. Use example character + controller
+4. Interact with the test boxes
+5. Watch the HUD update
+6. Apply buffs/debuffs
+7. Trigger leveling events
+8. Inspect the values in UI and debug displays
+
+It is designed to be extremely easy to explore and reverse engineer.
+
+---
+
+# 🎯 **Purpose of the Example**
+
+This example project is meant to:
+
+- Show best practices
+- Provide clean Blueprint templates
+- Demonstrate how to set up data assets
+- Show UI patterns
+- Provide test stations for sandbox experimentation
+- Offer a complete minimal-profile setup
+
+It is a **technical learning project**, not a content demo.

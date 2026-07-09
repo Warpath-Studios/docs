@@ -1,0 +1,232 @@
+---
+title: "Using the Example Project"
+description: "The Ultimate Multiplayer Skill System (UMSS) plugin ships with no UI and no gameplay demo baked into the plugin itself."
+---
+
+The **Ultimate Multiplayer Skill System (UMSS)** plugin ships with **no UI** and **no gameplay demo** baked into the plugin itself.
+
+All sample UI, demo map, and example Blueprint logic live in a **separate example content folder** hosted on GitLab:
+
+👉 [**https://gitlab.com/warpathstudios/example-projects/skill-system-example-project**](https://gitlab.com/warpathstudios/example-projects/skill-system-example-project)
+
+This is **not** a standalone Unreal project.  
+It’s content that you add into your own project.
+
+This page walks you through exactly how to set it up so it works out of the box.
+
+---
+
+## 🧱 1. Create a New Unreal Project (Game Animation Sample)
+
+The example content was built on top of Epic’s **Game Animation Sample** project.
+
+To avoid missing references and broken assets, you should:
+
+1. Open **Epic Games Launcher → Learn** tab
+2. Find **Game Animation Sample**
+3. Click **Create Project**
+4. Choose a project name (e.g. `UMSS_SkillSystemDemo`)
+5. Let it create and open that project
+
+You *can* integrate the example content into another project later, but this template ensures everything works first try.
+
+---
+
+## 🔌 2. Enable the UMSS Plugin
+
+In your new Game Animation Sample–based project:
+
+1. Go to **Edit → Plugins**
+2. Search for **Ultimate Multiplayer Skill System**
+3. Enable it
+4. Restart the editor when prompted
+
+Now this project can use the UMSS Skill Component, Skill Manager, etc.
+
+---
+
+## 📁 3. Download or Clone the Example Content
+
+Go to:
+
+👉 [**https://gitlab.com/warpathstudios/example-projects/skill-system-example-project**](https://gitlab.com/warpathstudios/example-projects/skill-system-example-project)
+
+You’re pulling in **Content only**, not a `.uproject`.
+
+### Option A – Download ZIP
+
+1. Click **Download → Download ZIP**
+2. Extract the ZIP
+3. Inside the extracted folder you’ll see a top-level folder:
+
+```
+SkillSystem
+ ├── Demo
+ ├── Map
+ ├── Skills
+ ├── Textures
+ └── UI
+```
+
+4. Copy the entire **SkillSystem** folder
+5. Paste it into your project’s **Content** folder:
+
+```
+YourProject
+ └── Content
+      └── SkillSystem
+          ├── Demo
+          ├── Map
+          ├── Skills
+          ├── Textures
+          └── UI
+```
+
+### Option B – Clone via Git
+
+```
+git clone https://gitlab.com/warpathstudios/example-projects/skill-system-example-project.git
+```
+
+Then:
+
+- Open the cloned repo
+- Copy the **SkillSystem** folder into your project’s `Content` folder as above.
+
+> ⚠ **Important:**  
+> Do **not** try to open the GitLab content as a project.  
+> It’s a content pack intended to be added into your own project.
+
+---
+
+## 🧩 4. GameMode & PlayerController Setup
+
+The example content includes a GameMode and related logic tailored for the demo:
+
+- **GameMode:** `GM_SkillSystem`
+
+To use it:
+
+1. Go to **Edit → Project Settings → Maps & Modes**
+2. Under **Default Modes**:
+
+   - Set **Default GameMode** to `GM_SkillSystem`
+
+This GameMode uses the correct Character/Controller setup and wires in the Skill Component and HUD.
+
+If you don’t set this:
+
+- Skills may not initialize
+- HUD won’t show
+- XP logic may not fire
+
+---
+
+## 🗺 5. Open the Demo Map
+
+Open:
+
+```
+Content/SkillSystem/Map/SkillSystem_DemoLevel
+```
+
+Then click **Play**.
+
+If everything is set up correctly, you should see:
+
+- The demo character
+- The skill HUD when you toggle it
+- XP awarding behaviors when interacting with the level
+
+---
+
+## 🎮 6. Input / HUD Controls
+
+The example uses Enhanced Input:
+
+- **Input Mapping Context:** `IMC_SkillSystem`
+- **HUD / Skill UI toggle:** **J**
+
+The good news:  
+`IMC_SkillSystem` is handled **inside the Character**, so:
+
+- You shouldn’t need to manually add the Mapping Context in GameMode or Controller
+- As long as you’re using `GM_SkillSystem` and the included character setup, the input should “just work”
+
+**Press** `J` in PIE to open/close the HUD.
+
+---
+
+## 🎨 7. Example UI & Notification Widget
+
+Inside:
+
+```
+Content/SkillSystem/UI/
+```
+
+you’ll find the example UI assets, including:
+
+- `WBP_NotificationWidget` → a sample notification popup widget used to display XP gain / level events
+
+This widget is wired to UMSS events to demonstrate:
+
+- Listening for XP updates
+- Responding to level-up events
+- Showing temporary on-screen notifications
+
+You can inspect this widget to see how to hook your own UI into:
+
+- `OnSkillUpdated`
+- `OnSkillLeveledUp`
+- Other Skill Component events
+
+---
+
+## 📚 8. Example Skills & Data
+
+In:
+
+```
+Content/SkillSystem/Skills/
+```
+
+you’ll find:
+
+- Sample **Skill Definitions**
+
+These demonstrate:
+
+- How Skill Definitions are structured
+- How tags are used
+- How the manager ties them together
+
+These are for reference—you’ll replace these with your own definitions in your actual game.
+
+---
+
+## 🧪 9. Quick Sanity Checklist
+
+If things aren’t working:
+
+- ✅ **UMSS plugin is enabled**
+- ✅ **SkillSystem folder is inside your project’s** `Content/`
+- ✅ **Default GameMode =** `GM_SkillSystem`
+- ✅ You are opening `SkillSystem_DemoLevel`
+- ✅ You’re pressing **J** in PIE to open the HUD
+- ✅ No errors in the Output Log about missing Skill Manager or Skill Component
+
+If any of those are wrong, the example will behave like “nothing is happening.”
+
+---
+
+## 🎉 You’re Good to Go
+
+Once this content is set up and working:
+
+- You can copy patterns from the `SkillSystem` folder into your real project
+- You can replace the demo Skills with your own
+- You can skin or rebuild the HUD to match your game
+- You can rip out the sample input and wire it into your own controls
+
+UMSS stays the same. The example content is just there to show you one clean way to integrate it.

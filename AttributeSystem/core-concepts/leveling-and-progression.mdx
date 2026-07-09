@@ -1,0 +1,65 @@
+---
+title: "Leveling & Progression"
+description: "Attributes can have:"
+---
+
+## **XP-Based Attributes**
+
+Attributes can have:
+
+- XP
+- Levels
+- XP curves
+- Level curves
+- XP gain rules
+- On-level-up behavior
+
+---
+
+## **Progression Config (**`UAttributeProgressionConfig`**)**
+
+Defines:
+
+- XP required per level
+- Curve assets for scaling
+- Whether attributes scale automatically
+- Max level
+- XP overflow rules
+
+---
+
+## **AttributeProgression**
+
+A modifier struct that affects:
+
+- How much XP is awarded
+- How levels modify attributes
+- Optional scaling multipliers
+
+---
+
+## **Leveling Flow**
+
+1. XP Added
+2. XP evaluated against curve
+3. Level-up triggered
+4. Link definitions applied
+5. Attribute values recalculated
+6. Events broadcast
+7. Replicated to clients
+
+---
+
+## **Designer Notes**
+
+- You can create a “Player Progression” curve and reuse it for all attributes.
+- Or give each stat its own leveling curve.
+- Works great for passive systems like “Chopping XP increases Logging Efficiency.”
+
+---
+
+## **Developer Notes**
+
+- XP/Level logic is fully component-driven.
+- Attribute progression is evaluated in a single pass for performance.
+- Curve tables may be substituted with custom logic.

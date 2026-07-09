@@ -1,0 +1,62 @@
+---
+title: "Attribute Level Link Definitions"
+description: "This system allows attributes to influence each other automatically."
+---
+
+## **What Are Link Definitions?**
+
+This system allows attributes to influence each other automatically.
+
+Examples:
+
+- 1 Strength → +5 MaxHealth
+- 1 Endurance → +0.2 Stamina Regen
+- Leveling Dexterity increases CritChance
+
+This lets designers scale complex stat systems *without coding*.
+
+---
+
+## **Structure**
+
+Defined in `UAttributeLevelLinkDefinition`.
+
+Each link contains:
+
+- **Source Attribute**
+- **Target Attribute**
+- **Trigger Type** (level gained, value changed, etc.)
+- **Magnitude / Formula**
+- **Operation Type** (Add, Multiply, Override)
+
+---
+
+## **When Are Links Applied?**
+
+Links trigger when:
+
+- A stat levels up
+- An attribute value changes
+- A profile is loaded
+- Effects modify the source attribute
+
+The AMC automatically re-evaluates link rules to keep stats accurate.
+
+---
+
+## **Designer Notes**
+
+Use these to build “RPG feeling” systems:
+
+- Strength raises health
+- Wisdom raises mana pool
+- Agility increases movement speed
+- Vitality increases regen rate
+
+---
+
+## **Developer Notes**
+
+- Links are applied using the same pipeline as modifiers.
+- They batch into modification passes to avoid recursion or instability.
+- Support both linear and scaled formulas.

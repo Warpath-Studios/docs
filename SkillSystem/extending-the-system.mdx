@@ -1,0 +1,334 @@
+---
+title: "Extending the System"
+description: "The Ultimate Multiplayer Skill System (UMSS) is designed to be lightweight, modular, and highly extensible."
+---
+
+The **Ultimate Multiplayer Skill System (UMSS)** is designed to be lightweight, modular, and highly extensible.  
+Everything inside the plugin intentionally avoids enforcing gameplay or UI patterns, allowing you to expand it as much as you need — whether you're building simple skill leveling or a full MMO-style progression system.
+
+This page covers advanced usage patterns and ways to extend UMSS using **Blueprints**, **C++**, **custom metadata**, or **custom systems**.
+
+---
+
+# 🧱 **1. Understanding the Extensibility Philosophy**
+
+UMSS intentionally does *not* include:
+
+- Stats or attributes
+- Abilities
+- Perk effects
+- Talent systems
+- XP source rules
+- UI systems
+- Level-up bonuses
+
+Instead, UMSS provides:
+
+- Skill Instances
+- XP leveling
+- Parent/child hierarchy
+- Node unlock metadata
+- A replication-safe runtime system
+- Blueprint and C++ hooks
+- Events for customization
+
+This gives you everything needed to integrate with:
+
+- Custom combat frameworks
+- Crafting systems
+- Attribute systems (GAS or custom)
+- UI panels
+- Recipe/ability unlock systems
+- Player progression
+- Save/load systems
+
+The system is meant to be a **foundation**, not a closed box.
+
+---
+
+# 🧰 **2. Custom XP Logic**
+
+UMSS does not impose how XP should be earned.  
+You can implement XP logic anywhere in your project.
+
+### Examples of custom XP sources:
+
+- XP based on damage dealt
+- XP based on rarity of crafted items
+- XP based on harvest yield
+- Bonus XP for weak spots
+- Time-based XP (MMO idle workers)
+- XP loss on death
+- XP multipliers at night/certain regions
+
+### Example Blueprint pattern:
+
+```
+BaseXP = 10
+If ToolQuality == Rare → BaseXP *= 2
+If Weather == Rain → BaseXP *= 1.25
+AwardXP(Skill.Gathering.Logging, BaseXP)
+```
+
+### Example C++ pattern:
+
+```
+float FinalXP = CalculateXPBasedOnToolQuality(TreeQuality);
+SkillComponent->AwardXP(TreeSkillTag, FinalXP);
+```
+
+You can design XP rules as simple or complex as needed.
+
+---
+
+# 🧩 **3. Overriding Level-Up Behavior**
+
+UMSS fires the event:
+
+- **OnSkillLeveledUp**
+
+This allows you to plug in anything your game needs.
+
+### Examples:
+
+- Increase max stamina
+- Improve attack speed
+- Unlock new recipes
+- Increase carry weight
+- Reward talent points
+- Trigger VFX/SFX
+- Send UI notifications
+- Trigger achievements
+- Increase attribute-based stats
+
+### Blueprint pattern:
+
+```
+Event OnSkillLeveledUp
+    Switch(SkillTag)
+        Case Skill.Combat.Sword:
+             IncreaseDamageBy(5%)
+        Case Skill.Crafting.Carpentry:
+             UnlockRecipe("WoodenBow")
+```
+
+### C++ pattern:
+
+Override virtual function on your custom SkillComponent subclass.
+
+---
+
+# 🧬 **4. Extending Skill Instances (C++)**
+
+Skill Instances are intentionally lightweight, but you can subclass them to add custom behavior.
+
+### Example: CustomSkillInstance
+
+```
+UCLASS()
+class YOURGAME_API UCustomSkillInstance : public USkillInstance
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(Replicated)
+    float BonusDamageMultiplier;
+
+    virtual void OnLeveledUp() override;
+};
+```
+
+Then override the construction logic inside your custom SkillComponent to spawn this instead of default SkillInstances.
+
+---
+
+# 🌳 **5. Creating Your Own Talent/Perk System**
+
+UMSS **does not** ship with a talent tree, but it provides:
+
+- Metadata arrays
+- Hierarchical skill structure
+- Node unlock API
+- Node replication
+- Node events
+
+This lets you build:
+
+- WoW-style talent trees
+- ESO-style skill lines
+- Split specialization paths
+- Rune/perk boards
+- Passive bonuses
+- Class upgrades
+- Weapon mastery systems
+
+### Common pattern:
+
+1. Define metadata in the Skill Definition
+2. Build UI that reads the metadata
+3. When a node is clicked:
+
+   - Client RPC → Server
+   - Server calls `UnlockNode()`
+4. Apply effects in your own system
+
+This keeps UMSS free of game-specific logic.
+
+---
+
+# 🗂 **6. Adding Custom Metadata**
+
+Skill Definitions can store any custom data you need:
+
+- Float bonuses
+- Tags for abilities
+- Crafting unlocks
+- Weapon mastery categories
+- Specialization IDs
+- UI grouping information
+- Prestige requirements
+- Seasonal bonuses
+
+You can expand the Skill Definition struct or create additional Data Assets that reference Skill Definitions.
+
+---
+
+# 🧠 **7. Custom Save/Load Systems**
+
+UMSS does not handle saving/loading because every project uses different persistence patterns.
+
+You can save:
+
+- Level
+- Current XP
+- Node unlocks
+- Custom metadata
+- Parent/child progression
+
+Recommended pattern:
+
+### Blueprint Save:
+
+- Loop over all skills
+- Store SkillTag, Level, XP, NodeUnlocks
+
+### Load:
+
+- After OnSkillsInitialized
+- Restore values
+- Fire updates/refresh UI
+
+### C++ Save:
+
+Use JSON, a profile manager, or Unreal’s save game system.
+
+---
+
+# 🔗 **8. Integrating with Other Frameworks**
+
+UMSS integrates well with:
+
+### ✔ Attribute Systems
+
+(GAS or custom)  
+Apply bonuses on level-up.
+
+### ✔ Crafting Systems
+
+Unlock recipes or improve yield.
+
+### ✔ Combat Frameworks
+
+Increase damage, stamina, or attack speed.
+
+### ✔ Building/Construction Systems
+
+Unlock building tiers.
+
+### ✔ Quest Systems
+
+Reward XP or unlock perks.
+
+### ✔ Inventory Systems
+
+Gate items behind skill requirements.
+
+UMSS acts as the **skill backbone** for all these systems.
+
+---
+
+# 🌐 **9. Multiplayer Customization**
+
+UMSS is fully replicated, but you may extend:
+
+- Custom RPCs
+- Prediction wrappers
+- Anti-cheat validation
+- Party/shared XP systems
+- Server-authoritative skill tracking
+- Multi-server persistence
+
+The default system is designed for standard UE multiplayer.  
+MMO-scale setups may require PlayerState-based storage and database persistence.
+
+---
+
+# 🔥 **10. Creating Your Own Skill Types**
+
+UMSS supports any type of skill, including:
+
+- Weapon mastery
+- Crafting mastery
+- Gathering efficiency
+- Movement abilities
+- Class abilities
+- Spells
+- Professions
+- Prestige ranks
+- Seasonal skills
+- Faction skills
+- Research skills
+
+Each type is just a Skill Definition with custom rules that *you* implement.
+
+UMSS handles the XP/levels — you handle the meaning.
+
+---
+
+# 🧩 **11. Replacing the Skill Component**
+
+Advanced users may subclass or fully replace the Skill Component.
+
+### Example uses:
+
+- Adding cooldowns
+- Tracking active bonuses
+- Adding reputation levels
+- Multi-class skill profiles
+- Switching skill profiles on the fly
+- Server-side rule validation
+
+Just override the component and assign your version to your Player Controller.
+
+---
+
+# 🧭 **12. Summary**
+
+UMSS gives you:
+
+- A flexible, safe, multiplayer-ready skill backbone
+- Hierarchy, XP, levels, node metadata, and replication
+- Optional perk/talent node unlocks
+- Blueprint and C++ extensibility
+- Save/load freedom
+- 100% UI freedom
+- 100% gameplay logic freedom
+
+You build the gameplay — UMSS ensures progression is stable, scalable, and ready for multiplayer.
+
+---
+
+# 📌 **Next Steps**
+
+👉 [Example Implementations](/warpath-studios/umf/example-implementations-v0pv2zo9zy-mt792hxe934g) – Combat, crafting, and gathering XP examples  
+👉 [Troubleshooting](/warpath-studios/umf/troubleshooting-uqkbm455l6-ktl0jbjzs0kz) – Common mistakes and how to fix them

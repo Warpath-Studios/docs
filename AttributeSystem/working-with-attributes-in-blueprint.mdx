@@ -1,0 +1,132 @@
+---
+title: "Working With Attributes in Blueprint"
+description: "Every Actor with UMAS has the ."
+---
+
+## **Accessing the Attribute Manager**
+
+Every Actor with UMAS has the `AttributeManagerComponent`.
+
+In Blueprint:
+
+**Get Component → Attribute Manager Component**
+
+From here you can:
+
+- Get Attribute
+- Modify Attribute
+- Add XP
+- Apply Effect
+- Query current levels
+- Receive events
+
+---
+
+## **Getting Attribute Values**
+
+UMAS provides Blueprint nodes:
+
+- **Get Attribute Value (Handle)**
+- **Get Base Attribute Value**
+- **Get Max Attribute Value**
+- **Get Min Attribute Value**
+- **Get Attribute Info Struct**
+
+Example usage:
+
+```
+Get Attribute Value → Health
+```
+
+Use in UI, combat, stamina checks, etc.
+
+---
+
+## **Modifying Attributes**
+
+Common Blueprint nodes:
+
+- **Add Attribute Value**
+- **Subtract Attribute Value**
+- **Multiply Attribute Value**
+- **Set Attribute Value**
+- **Clamp Attribute Value**
+
+Examples:
+
+- Reduce Stamina on sprint
+- Add Health on potion use
+- Increase Hunger every hour
+
+UMAS applies all changes through its internal engines, ensuring replication + link definitions update correctly.
+
+---
+
+## **Applying Effects**
+
+Blueprint node:
+
+**Apply Attribute Effect**
+
+Parameters typically include:
+
+- Effect Data Asset
+- Instigator
+- Magnitude override (optional)
+- Duration override (optional)
+
+Effects support:
+
+- Timed buffs
+- Damage over time
+- Regen over time
+- Temporary stat changes
+
+---
+
+## **Adding XP / Levels**
+
+If the attribute supports progression:
+
+- **Add XP to Attribute**
+- **Set Level**
+- **Get Attribute Level**
+- **Get Current XP / XP Required**
+
+Used for:
+
+- Skill systems
+- Passive survival XP
+- RPG attributes leveling up
+
+---
+
+## **Listening for Events**
+
+Inside Blueprint, most common are:
+
+- **On Attribute Changed**
+- **On Attribute Increased / Decreased**
+- **On Attribute Zero**
+- **On Effect Applied / Removed**
+- **On Level Up**
+- **On XP Changed**
+
+These events fire automatically.
+
+---
+
+## **Designer Notes**
+
+- Blueprints can do everything needed for most projects.
+- You rarely need C++ unless you want custom calculations or overrides.
+- For survival games, handle most logic in tick or timers using the AMC.
+- UI should poll or bind to Attribute Changed events for performance.
+
+---
+
+## **Developer Notes**
+
+- Blueprint nodes are wrappers around fast C++ calls.
+- Attribute handles can be exposed via BP-friendly enums if desired.
+- Full editor-time validation is performed to prevent invalid modifications.

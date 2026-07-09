@@ -1,0 +1,138 @@
+---
+title: "Creating an Attribute Profile"
+description: "An Attribute Profile is a data asset that defines the entire attribute structure for a character or actor."
+---
+
+# **What Is an Attribute Profile?**
+
+An **Attribute Profile** is a data asset that defines the entire attribute structure for a character or actor.
+
+A profile includes:
+
+- Attribute Definitions (Health, Stamina, Strength, etc.)
+- Optional Leveling/Progression rules
+- Optional Regeneration rules
+- Attribute Link Definitions (scaling rules)
+- Optional Calculation/Effect configuration
+
+Every character using UMAS must have exactly **one** profile assigned.
+
+---
+
+# **Creating an Attribute Profile**
+
+## **Step 1 — Create the Data Asset**
+
+1. In the Content Browser
+2. **Right-click → Create Advanced Asset → Miscellaneous → Data Asset**
+3. Choose:  
+   `AttributeProfile` (class name: `UAttributeProfile`)
+4. Name it something clear, such as:
+
+   - `DA_PlayerAttributes`
+   - `DA_WolfAttributes`
+   - `DA_BossAttributes`
+
+---
+
+## **Step 2 — Add Attribute Definitions**
+
+Inside the profile:
+
+1. Open the asset.
+2. Find the section **Attribute Definitions**.
+3. Click **Add Element**.
+4. For each attribute, configure:
+
+- Attribute Handle (e.g., "Health")
+- Base Value
+- Min Value / Max Value
+- Optional: Regen settings
+- Optional: Progression settings
+- Optional: Tags
+
+This defines your entire stat sheet.
+
+---
+
+## **Step 3 — (Optional) Add Level Link Definitions**
+
+If your game needs scaling logic (e.g., Strength affecting MaxHealth):
+
+1. Create a Data Asset of type:  
+   `AttributeLevelLinkDefinition`
+2. Add Link Rules such as:
+
+- Source Attribute: Strength
+- Target Attribute: MaxHealth
+- Operation: Add
+- Formula: 1 STR → +10 MaxHealth
+
+3. Assign the link definition to your Attribute Profile under:
+
+**Linked Definitions**
+
+You may add multiple link definitions if desired.
+
+---
+
+## **Step 4 — (Optional) Configure Progression**
+
+If your game uses XP or leveling:
+
+In each Attribute Definition → ProgressionConfig:
+
+- Assign an XP curve
+- Assign a Level curve
+- Set max levels
+- Configure XP overflow
+- Configure per-level scaling rules
+
+This transforms an attribute into a passive leveling stat.
+
+---
+
+## **Step 5 — Assign the Profile to Your Character**
+
+Go to your character Blueprint or C++ actor:
+
+### **Blueprint**
+
+1. Select the **Attribute Manager Component**
+2. Look for the field: **Attribute Profile**
+3. Select your new profile
+
+### **C++**
+
+```
+AttributeManager->AttributeProfile = MyProfile;
+```
+
+On BeginPlay, UMAS will:
+
+- Load all definitions
+- Create runtime attribute instances
+- Apply link definitions
+- Initialize XP/Level values
+- Set starting values
+- Replicate everything
+
+---
+
+# **Designer Tips**
+
+- Keep attributes grouped logically (Combat, Survival, Magic, etc.)
+- Use link definitions to reduce repetitive stat editing
+- Use progression curves sparingly—only for attributes that should level
+- Make unique profiles for dramatically different creatures  
+  (e.g., wolves vs humans vs bosses)
+
+---
+
+# **Developer Notes**
+
+- Profiles are immutable at runtime
+- Runtime instances exist in the Attribute Manager
+- Changing a profile only affects *new spawns*, not existing actors
+- Profiles are lightweight assets—safe for duplication and iteration
+- All work is done server-side and replicated automatically

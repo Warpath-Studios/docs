@@ -1,0 +1,74 @@
+---
+title: "Attribute System"
+description: "The Universal Multiplayer Attribute System (UMAS) is a modular, multiplayer-safe attribute framework designed to support any type of game: survival, RPG, a"
+---
+
+The Universal Multiplayer Attribute System (UMAS) is a **modular, multiplayer-safe attribute framework** designed to support any type of game: survival, RPG, action, MMO, or simulation.
+
+The system is **data-driven**, allowing designers to define attributes, profiles, level scaling, and effects without writing code.  
+For developers, UMAS exposes a clean C++ API with optional Blueprint hooks.
+
+UMAS is built around three pillars:
+
+### **1. Attribute Profiles**
+
+Define which stats a character has and their base/min/max values.
+
+### **2. Attribute Manager Component**
+
+The runtime system that stores attribute values, applies modifiers, handles replication, processes effects, and manages progression.
+
+### **3. Calculation & Modification Framework**
+
+A flexible engine that applies effects, link definitions, scaling rules, and capacity changes to attributes.
+
+---
+
+## **Key Features**
+
+- Fully multiplayer replicated
+- Data-driven attributes
+- Leveling & progression support
+- Attribute linking (STR → MaxHealth, etc.)
+- Realtime modifiers & effects
+- Optional GAS-style effect model
+- Clean C++ API
+- Full Blueprint access
+- Supports any number of attributes (1–200+)
+- Works with any character or actor, not just players
+
+---
+
+## **Intended Use Cases**
+
+- Survival stats (Hunger, Thirst, Stamina)
+- RPG stats (Strength, Defense, Crit Chance)
+- MMO scaling (Primary → Secondary attributes)
+- Passive regeneration systems
+- Temporary buffs/debuffs
+- Equipment or item-based stat bonuses
+- Level-based upgrades
+
+---
+
+## **Supported Actors**
+
+- Player Characters
+- NPCs
+- AI enemies
+- Animals
+- Items or Equipment (if desired)
+- Any Actor with the AttributeManagerComponent
+
+---
+
+## **Documentation Structure**
+
+UMAS documentation is organized into:
+
+- Setup pages
+- Core systems
+- Usage (Blueprint + C++)
+- Advanced topics
+- Example project
+- Troubleshooting

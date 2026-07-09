@@ -1,0 +1,379 @@
+---
+title: "Example Implementations"
+description: "This page shows practical, real-world examples of how to use the Ultimate Multiplayer Skill System (UMSS) inside your game."
+---
+
+This page shows practical, real-world examples of how to use the **Ultimate Multiplayer Skill System (UMSS)** inside your game.  
+These patterns are intentionally simple, flexible, and Blueprint-friendly.
+
+All examples assume:
+
+- The **Skill Component** is on your **Player Controller**
+- XP is awarded on the **server**
+- Effects (damage, yield, recipes, etc.) are implemented by *your* systems
+- Gameplay Tags reference skills you created in your project
+
+Use these examples as templates.
+
+---
+
+# ⚔️ **1. Combat XP**
+
+### **Example: Award XP when a hit lands**
+
+Event Flow:
+
+1. Server registers a hit
+2. Determine weapon type (sword, axe, bow)
+3. Award XP for the matching skill
+
+**Blueprint Pattern:**
+
+```
+Event OnHitRegistered (Server)
+    WeaponType = GetWeaponType()
+    Switch WeaponType:
+        Case Sword:
+            AwardXP(Skill.Combat.Sword, 15)
+        Case Axe:
+            AwardXP(Skill.Combat.Axe, 10)
+        Case Bow:
+            AwardXP(Skill.Combat.Bow, 12)
+```
+
+### **Scaling XP based on damage**
+
+```
+XPAmount = DamageDealt * 0.5
+AwardXP(Skill.Combat.Sword, XPAmount)
+```
+
+### **Level-up effect example**
+
+```
+Event OnSkillLeveledUp
+    If SkillTag == Skill.Combat.Sword:
+        IncreasePlayerDamage(2%)
+        PlayLevelUpVFX()
+```
+
+---
+
+# 🪓 **2. Gathering / Harvesting XP**
+
+### **Example: Tree chopping XP**
+
+```
+OnTreeHit(Server)
+    AwardXP(Skill.Gathering.Logging, 8)
+```
+
+### **Bonus XP for tree tier**
+
+```
+BaseXP = 10
+If TreeTier == Rare: BaseXP *= 2
+AwardXP(Skill.Gathering.Logging, BaseXP)
+```
+
+### **Apply gathering efficiency on level**
+
+```
+Event OnSkillUpdated
+    If SkillTag == Skill.Gathering.Logging:
+        NewYield = BaseYield * (1 + (Level * 0.02))
+```
+
+---
+
+# 🔨 **3. Crafting XP**
+
+### **Basic crafting XP**
+
+```
+OnItemCrafted(Server)
+    AwardXP(Skill.Crafting.Carpentry, 20)
+```
+
+### **XP based on recipe complexity**
+
+```
+AwardXP(Skill.Crafting.Blacksmithing, RecipeData.XPValue)
+```
+
+### **Unlock new recipes at certain levels**
+
+```
+Event OnSkillLeveledUp
+    If SkillTag == Skill.Crafting.Carpentry:
+        If Level == 5 → UnlockRecipe("WoodenShield")
+        If Level == 10 → UnlockRecipe("Longbow")
+```
+
+This ties seamlessly into your crafting system.
+
+---
+
+# 🌾 **4. Farming / Animal Handling XP**
+
+### **Planting crops**
+
+```
+OnSeedPlanted:
+    AwardXP(Skill.Farming.Crops, 5)
+```
+
+### **Harvest quality bonus**
+
+```
+Quality = DetermineCropQuality()
+AwardXP(Skill.Farming.Crops, Quality * 4)
+```
+
+### **Animal care**
+
+```
+OnFeedAnimal(Server):
+    AwardXP(Skill.Farming.Animals, 3)
+```
+
+---
+
+# 🧗 **5. Movement / Survival Skills**
+
+### **Running / stamina training**
+
+```
+OnPlayerMoved:
+    Distance = GetDistanceTraveledSinceLastTick()
+    AwardXP(Skill.Survival.Athletics, Distance / 1000)
+```
+
+### **Swimming**
+
+```
+If PlayerInWater:
+    AwardXP(Skill.Survival.Swimming, 0.2)
+```
+
+### **Climbing**
+
+```
+If Climbing:
+    AwardXP(Skill.Survival.Climbing, 0.3)
+```
+
+Great for Elder Scrolls-style skill growth.
+
+---
+
+# 🌿 **6. Use-Based Skill Gains (Learn by Doing)**
+
+UMSS is perfect for survival games.
+
+### **Example: Cooking**
+
+```
+OnCookedItemCreated:
+    AwardXP(Skill.Crafting.Cooking, 6)
+```
+
+### **Example: First Aid**
+
+```
+OnBandageUsed:
+    AwardXP(Skill.Medicine.FirstAid, 10)
+```
+
+### **Example: Fishing**
+
+```
+OnFishCaught:
+    AwardXP(Skill.Gathering.Fishing, 15)
+```
+
+---
+
+# 🌳 **7. Specialization Paths (Using Metadata)**
+
+You can use Skill Definitions’ node/perk metadata fields to set up specialization choices.
+
+### **Example: Logging → Fine Logging specialization**
+
+```
+If NodeUnlocked("FineLogging"):
+    YieldMultiplier = 1.25
+    RareDropChance += 10%
+```
+
+### **Unlocking a node**
+
+```
+OnSpecializationButtonClicked (Client)
+    Server_UnlockNode(Skill.Gathering.Logging, "FineLogging")
+```
+
+### **Apply effects**
+
+```
+Event OnNodeUnlocked
+    If NodeID == "FineLogging":
+        HarvestSpeed += 15%
+```
+
+This uses UMSS’s metadata and unlock API — your game implements the effect.
+
+---
+
+# 🧪 **8. Boosting Attributes (Your Systems)**
+
+Integrate UMSS with your Attribute System (GAS or custom).
+
+### **Example: Health bonus**
+
+```
+OnSkillLeveledUp:
+    If SkillTag == Skill.Survival.Vitality:
+        AttributeSystem → IncreaseMaxHealth(10)
+```
+
+### **Example: Stamina regen**
+
+```
+OnNodeUnlocked(FleetFooted):
+    AttributeSystem → AddStaminaRegen(2)
+```
+
+UMSS fires the event — you apply the change.
+
+---
+
+# 🗂 **9. Region-Based XP (Battlegrounds, Zones, Towns)**
+
+Great for MMOs or open-world survival.
+
+### **Example: Town bonus**
+
+```
+If PlayerInsideTown:
+     XP *= 1.20
+AwardXP(Skill.Crafting.Carpentry, XP)
+```
+
+### **Example: Battleground control**
+
+```
+If RegionOwnedByCompany:
+    AwardXP(Skill.Combat.Sword, BaseXP * 1.15)
+```
+
+---
+
+# 🎁 **10. Unlocking Player Abilities**
+
+UMSS doesn’t include an ability system, but integrates easily with one.
+
+### **Example: Grant a dash ability**
+
+```
+OnNodeUnlocked(DashTraining):
+    AbilitySystem → GrantAbility(Dash)
+```
+
+### **Remove or modify abilities:**
+
+```
+OnSkillReset:
+    AbilitySystem → RemoveAbility(BerserkMode)
+```
+
+---
+
+# 📦 **11. Awarding XP from Quests**
+
+```
+OnQuestCompleted:
+    AwardXP(Skill.Questing.General, 150)
+```
+
+Or reward specific skills:
+
+```
+AwardXP(Skill.Crafting.Tailoring, QuestData.CraftingXP)
+AwardXP(Skill.Survival.Athletics, QuestData.AthleticsXP)
+```
+
+---
+
+# 🌐 **12. Multiplayer Examples**
+
+### **Shared XP (party systems)**
+
+```
+ForEach PartyMember:
+    PartyMember.SkillComponent → AwardXP(Skill.Combat.Sword, XP/PartySize)
+```
+
+### **Group-gathering**
+
+```
+If HelperNearby:
+    AwardXP(Skill.Gathering.Logging, BaseXP * 0.5)  (to helper)
+```
+
+These patterns plug directly into UMSS.
+
+---
+
+# 🧭 **13. Resetting or Respec Logic**
+
+### **Reset a single skill**
+
+```
+SkillComponent → ResetSkill(SkillTag)
+```
+
+### **Reset all skills**
+
+```
+SkillComponent → ResetAllSkills()
+```
+
+### **Refund points (designer logic)**
+
+```
+OnResetSkill:
+    RefundTalentPoints(SkillTag, PointsSpent)
+```
+
+---
+
+# **14.** Example Project (Reference Only)
+
+This sample project illustrates the basic integration flow for UMSS including
+
+setup, skill definitions, XP progression, replication, and UI binding.
+
+It is not intended to serve as a full game template.
+
+Repository:[**https://gitlab.com/warpathstudios/example-projects/skill-system-example-project.git**](https://gitlab.com/warpathstudios/example-projects/skill-system-example-project.git)
+
+Check out [Using the Example Project](/warpath-studios/umf/using-the-example-project-zwjacentf4-4iqd2ee0tawy) for details on how to setup up the example project.
+
+# 📌 **Summary**
+
+These examples demonstrate how UMSS can be used in:
+
+- Combat
+- Crafting
+- Gathering
+- Survival movement
+- Professions
+- Specializations/perks
+- Attribute bonuses
+- Multiplayer systems
+- UI interaction
+- Quest rewards
+- Ability unlocks
+
+UMSS handles the **XP, levels, hierarchy, replication, and node unlock state** — you control everything else.

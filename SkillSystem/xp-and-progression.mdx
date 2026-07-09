@@ -1,0 +1,300 @@
+---
+title: "XP & Progression"
+description: "The Ultimate Multiplayer Skill System (UMSS) uses a flexible, data-driven XP pipeline that supports any type of progression, including:"
+---
+
+The **Ultimate Multiplayer Skill System (UMSS)** uses a flexible, data-driven XP pipeline that supports **any type of progression**, including:
+
+- XP-based leveling
+- Use-based (“learn by doing”) systems
+- Parent/child shared XP
+- Profession systems
+- Combat XP
+- Crafting/gathering XP
+- Custom rule-driven XP sources
+- Talent progression tied to skill levels
+
+UMSS does **not** dictate when or how XP is awarded — you control that entirely through Blueprints or C++.
+
+This page explains how XP works, how to award XP, how leveling is calculated, and how parent/child relationships affect progression.
+
+---
+
+# 🧠 **1. How XP Works in UMSS**
+
+Each Skill Instance has:
+
+- **Current XP**
+- **XP Required for Next Level**
+- **Current Level**
+- **Level Cap** (from the Skill Definition)
+- **XP Curve** (controls growth rate)
+
+When XP is added:
+
+1. XP is accumulated
+2. Required XP is checked
+3. If XP meets the requirement:
+
+   - Level increases
+   - Remainder XP carries over
+4. Events fire:
+
+   - `OnSkillUpdated`
+   - `OnSkillLeveledUp`
+5. Replication syncs changes to clients
+
+UMSS handles the leveling logic automatically.
+
+---
+
+# 🎯 **2. Awarding XP (Blueprint)**
+
+To give a skill XP, call:
+
+### **Award XP**
+
+```
+SkillComponent → AwardXP(SkillTag, Amount)
+```
+
+You can call this from:
+
+- Anim BP
+- Weapon BP
+- Interaction BP
+- Crafting events
+- Gathering events
+- Quest completion
+- Ability hits
+- Timer-based tick
+- Environmental logic
+
+> **📸 Screenshot Needed**  
+> *Blueprint node calling AwardXP with a Gameplay Tag.*
+
+---
+
+# 🧩 **3. Awarding XP (C++)**
+
+If your project uses C++:
+
+```
+SkillComponent->AwardXP(FGameplayTag::RequestGameplayTag("Skill.Combat.Sword"), 25.f);
+```
+
+This is safe to call on the **server** only.  
+(Clients may request XP through RPCs if desired.)
+
+---
+
+# 🔁 **4. XP Curves (Level Requirements)**
+
+The XP curve defines how much XP is required per level.
+
+### Supported progression types:
+
+- **Flat** (same XP every level)
+- **Linear** (steady growth)
+- **Quadratic** (good for profession-style skills)
+- **Exponential** (RPG / MMO style)
+- **Curve Table** (full control)
+
+Set this inside each Skill Definition.
+
+### Example XP Curve Rules
+
+| Style | Good For | Example Formula |
+| --- | --- | --- |
+| Flat | Use-based skills | 50 XP per level |
+| Linear | Survival games | 100 \* Level |
+| Quadratic | Professions | 25 \* Level² |
+| Exponential | MMO combat skills | 75 \* (1.5^Level) |
+
+UMSS does not enforce a specific formula.
+
+---
+
+# 🌲 **5. Parent / Child XP Behavior**
+
+Parent/child relationships allow ecosystem-like skills, such as:
+
+```
+Crafting
+ └─ Carpentry
+      └─ Bowmaking
+```
+
+UMSS supports several XP behaviors (designer-controlled):
+
+### **A. No Shared XP**
+
+Parent and child each level independently.
+
+### **B. Child → Parent XP**
+
+When a child gains XP, the parent also gains XP.
+
+### **C. Parent → Child XP**
+
+Leveling the parent skill pushes XP into its children.
+
+### **D. Mixed or Custom Rules**
+
+You can apply custom logic in your XP-award calls to route XP however you want.
+
+UMSS does **not** force any specific pattern — you define the relationships.
+
+---
+
+# 🎮 **6. Use-Based Progression**
+
+UMSS supports “learn by doing” systems easily.
+
+Example workflow:
+
+- Player chops a tree
+- Tree BP calls `AwardXP(SkillTag.Logging, 8)`
+- Skill updates automatically
+- XP popup (custom UI) appears
+- Logging skill slowly increases
+
+No timers, no extra systems — just call AwardXP whenever an action happens.
+
+---
+
+# 🪓 **7. Example: Gathering XP**
+
+Example BP logic for gathering:
+
+```
+OnResourceHarvested:
+    AwardXP(Skill.Gathering.Logging, 12)
+```
+
+You can scale XP based on:
+
+- Tool quality
+- Tree tier
+- Skill multipliers
+- Region buffs
+- Weight/size of item harvested
+
+UMSS stays out of this logic — it only processes the XP you award.
+
+---
+
+# ⚔️ **8. Example: Combat XP**
+
+Workflow:
+
+- Hit detection event on server
+- Determine weapon type
+- Award XP for the matching skill
+
+Example:
+
+```
+AwardXP(Skill.Combat.Sword, 15)
+```
+
+Or award XP based on damage dealt:
+
+```
+AwardXP(Skill.Combat.Sword, DamageAmount * 2)
+```
+
+---
+
+# 🔧 **9. Level-Up Behavior**
+
+When a skill levels up:
+
+1. New level is set
+2. Remainder XP carries over
+3. Level-up event fires
+4. Replicated updates are sent
+5. UI can display a notification (your custom UI)
+
+UMSS fires these events:
+
+- `OnSkillUpdated`
+- `OnSkillLeveledUp`
+
+Your UI or gameplay logic can tie into these.
+
+Examples:
+
+- Play VFX/SFX
+- Unlock recipes
+- Improve stat bonuses
+- Activate a talent node
+- Notify the player
+
+---
+
+# 💡 **10. Progress Queries (Useful for UI)**
+
+Common Blueprint accessors:
+
+- **GetSkillLevel(SkillTag)**
+- **GetCurrentXP(SkillTag)**
+- **GetXPRequiredForNextLevel(SkillTag)**
+- **GetPercentToNextLevel(SkillTag)**
+- **GetSkillDisplayName(SkillTag)**
+- **GetAllSkills()**
+
+These make UI building straightforward.
+
+---
+
+# 🌐 **11. Multiplayer Behavior**
+
+UMSS is fully replicated.
+
+### ✔ XP is processed on the server
+
+Clients can request XP, but all final calculations occur server-side.
+
+### ✔ Values replicate automatically
+
+Level, XP, talents — all synced.
+
+### ✔ Level-up events fire on clients
+
+Your UI can safely respond on each player’s machine.
+
+### ✔ Talent unlocks must be server-authoritative
+
+The same rule applies for XP.
+
+---
+
+# 🔥 **12. Advanced: XP Modifiers**
+
+You may add your own modifiers outside UMSS:
+
+- Temporary XP boosts (double XP)
+- Region-based bonuses
+- Equipment bonuses
+- Potion buffs
+- Skill synergy bonuses
+
+Common pattern:
+
+```
+FinalXP = BaseXP * XPBoostMultiplier
+AwardXP(SkillTag, FinalXP)
+```
+
+UMSS does not impose limits here — you build the system you want.
+
+---
+
+# 📌 **Next Steps**
+
+Now that you understand XP flow:
+
+👉 [Talent Trees](/warpath-studios/umf/talent-trees-aryfhah42z-75gh2iykc61l) – Build perks, branches, and prerequisites.  
+👉 [Component Integration](/warpath-studios/umf/component-integration-gjewwikl10-9xqrw967vi0u) – Ensure your Skills Component is set up correctly.  
+👉 [Example Implementations](/warpath-studios/umf/example-implementations-v0pv2zo9zy-mt792hxe934g) – See practical BP examples of combat, crafting, and gathering XP.

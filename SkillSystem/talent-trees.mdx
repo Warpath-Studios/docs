@@ -1,0 +1,302 @@
+---
+title: "Talent Trees"
+description: "The Ultimate Multiplayer Skill System (UMSS) does not include a built-in Talent Tree system."
+---
+
+## (Optional – Designer-Built)
+
+The **Ultimate Multiplayer Skill System (UMSS)** does **not** include a built-in Talent Tree system.
+
+Instead, UMSS provides a flexible **hierarchical skill framework** and **optional metadata structures** that you can use to build *your own* talent tree, perk grid, or specialization system.
+
+If you want a working example, the **Example Project** includes a simple demonstration tree — but this is *not part of the plugin itself*.
+
+This page explains:
+
+- What UMSS provides for talent/perk systems
+- How to define hierarchical/perk data
+- How to unlock perks via the Skill Component
+- How to build your own UI or use the Example Project as reference
+- How multiplayer validation works
+
+---
+
+# 🧱 **1. What UMSS Actually Provides**
+
+UMSS includes the following core systems that support talent trees:
+
+### ✔ **Skill Hierarchy**
+
+Skills support parent/child relationships, allowing you to build:
+
+```
+Combat
+ └─ One-Handed
+      └─ Swordsmanship
+```
+
+or
+
+```
+Crafting
+ └─ Blacksmithing
+      └─ Weaponsmithing
+           ├─ Swords
+           ├─ Axes
+           └─ Shields
+```
+
+This hierarchy is the backbone of any talent or perk system.
+
+---
+
+### ✔ **Metadata for Perk/Talent Nodes**
+
+Skill Definitions support **custom node/metadata arrays**, letting you define:
+
+- Perk IDs
+- Prerequisites
+- Unlock conditions
+- Descriptions
+- Icons
+- Custom data fields
+- Designer-defined effect names
+
+UMSS does *not* interpret this data — it simply stores and replicates it.
+
+---
+
+### ✔ **Unlock API**
+
+Skill Component includes a safe, server-authoritative way to activate any node/perk:
+
+```
+UnlockNode(SkillTag, NodeID)
+```
+
+or your own:
+
+```
+UnlockSpecialization(SkillTag, SpecializationID)
+```
+
+UMSS validates:
+
+- The skill exists
+- The node exists
+- The unlock is valid
+- The call came from the server
+
+Then it replicates the updated state.
+
+---
+
+### ✔ **Events**
+
+UMSS provides:
+
+- **OnNodeUnlocked**
+- **OnSkillUpdated**
+- **OnSkillsInitialized**
+
+These are used by your UI or your game logic to respond to unlocks.
+
+---
+
+### ✔ **Replication**
+
+All hierarchical + node/perk data replicates automatically.
+
+---
+
+## ❌ **UMSS Does NOT Provide**
+
+- No built-in talent tree UI
+- No built-in talent node system
+- No node layout logic
+- No example perk effects
+- No ability unlock system
+- No visual editor tooling
+
+All of those belong to the Example Project or to your game design.
+
+---
+
+# 🌿 **2. Designer-Built Talent Trees**
+
+To build a talent tree, designers typically:
+
+1. **Create a Skill Definition**
+2. Inside the skill’s metadata, define:
+
+   - Node IDs
+   - Descriptions
+   - Icons
+   - Prerequisite node IDs
+   - Skill or level requirements
+   - Any custom data needed
+3. Build a UI (grid, radial, branch, etc.)
+4. Use the Skill Component to unlock nodes
+5. Apply effects in your game logic
+
+UMSS intentionally does **not** restrict how you design the tree.
+
+---
+
+# 📘 **3. Example Metadata Structure (Designer Defined)**
+
+Your Skill Definition might contain metadata like:
+
+```
+NodeID: Boost_Stamina
+DisplayName: Stamina Boost I
+Description: Increases max stamina by 10.
+Prerequisites: []
+LevelRequirement: 5
+Cost: 1
+
+NodeID: Boost_Stamina_II
+DisplayName: Stamina Boost II
+Description: Increases max stamina by 20.
+Prerequisites: [Boost_Stamina]
+LevelRequirement: 10
+Cost: 1
+```
+
+UMSS does not interpret these — **you do**.
+
+---
+
+# 🔌 **4. Unlocking a Talent/Perk Node**
+
+To unlock custom nodes, call:
+
+```
+SkillComponent → UnlockNode(SkillTag, NodeID)
+```
+
+UMSS will:
+
+- Validate that the skill exists
+- Validate the node exists
+- Validate the request came from the **server**
+- Update the node state
+- Replicate changes
+- Fire event: **OnNodeUnlocked**
+
+Everything else (stat bonuses, ability unlocks, recipe unlocks) is up to your game’s logic.
+
+---
+
+# ⚠ **5. Multiplayer Rules**
+
+### ✔ All unlock logic must happen on the server
+
+Clients should only request unlocks.
+
+### ✔ State automatically replicates to the owning client
+
+No manual syncing required.
+
+### ✔ UI reads replicated data
+
+Widgets simply respond when events fire.
+
+---
+
+# 🎨 **6. Designer-Controlled Talent Tree UI**
+
+UMSS does **not** include a UI system for talent trees.
+
+You are free to design:
+
+- A linear unlock path
+- A branching tree
+- A hex grid
+- A radial wheel
+- A “skill book”
+- A tablet-like system
+- An RPG-style specialization panel
+
+Your UI should:
+
+1. Get Skill Component
+2. Query metadata for that skill
+3. Build visual nodes/buttons
+4. Determine if prerequisites are met
+5. Determine if unlock is available
+6. On click:
+
+   - Client RPC → Server → UnlockNode
+
+If you want a working example, refer to the **Example Project**.
+
+---
+
+# 🧪 **7. Applying Talent/Perk Effects**
+
+UMSS does not apply effects — you connect them in Blueprint or C++.
+
+### Common examples:
+
+- Modify attributes
+- Add/remove abilities
+- Unlock crafting recipes
+- Increase harvesting yield
+- Reduce stamina cost
+- Improve weapon handling
+- Change movement speed
+- Unlock profession specializations
+
+Use the `OnNodeUnlocked` event to apply effects.
+
+---
+
+# 📌 **8. Example Tree (Designer-Built)**
+
+Example swordsmanship specialization:
+
+```
+[ Weapon Handling ]
+        |
+[ Precision Strikes ]
+        |
+      /   \
+[ Parry ] [ Riposte ]
+```
+
+This is defined entirely in Skill Definition metadata.  
+UMSS just stores and replicates the node state.
+
+The Example Project includes a simple version of this for reference.
+
+---
+
+# 📘 **9. Summary**
+
+UMSS provides:
+
+- Skill hierarchy
+- Metadata storage
+- Unlock API
+- Replication
+- Events for UI
+- Foundation for perk/talent systems
+
+UMSS does **not** provide:
+
+- A built-in talent system
+- Talent UI
+- Node layout tools
+- Visual editors
+- Predefined nodes
+- Predefined effects
+
+This ensures the system is fully flexible and does not enforce any game design choices.
+
+---
+
+# 📌 **Next Steps**
+
+👉 [Example Implementations](/warpath-studios/umf/example-implementations-v0pv2zo9zy-mt792hxe934g) – Combat, crafting, and gathering XP examples  
+👉 [Troubleshooting](/warpath-studios/umf/troubleshooting-uqkbm455l6-ktl0jbjzs0kz) – Common mistakes and how to fix them

@@ -1,0 +1,274 @@
+---
+title: "Skill Definitions"
+description: "Skill Definitions are the foundation of the Ultimate Multiplayer Skill System (UMSS)."
+---
+
+Skill Definitions are the **foundation** of the Ultimate Multiplayer Skill System (UMSS).  
+Every skill in your game—combat skills, crafting skills, gathering skills, magic, professions, etc.—is created using a **Skill Definition Primary Data Asset**.
+
+This page explains:
+
+- What a Skill Definition is
+- How to create one
+- What each field means
+- How parent/child skills work
+- How Skill Definitions become runtime Skill Instances
+
+---
+
+# 🔷 **1. What Is a Skill Definition?**
+
+A **Skill Definition** is a Primary Data Asset that describes a single skill. It contains:
+
+- Display information (name, category, icon)
+- Leveling rules (max level, XP curve)
+- Gameplay Tags (unique identifier for the skill)
+- Parent skill (optional)
+- Talent tree entries (optional)
+- Advanced settings (optional metadata)
+
+At runtime, UMSS loads all Skill Definitions from your **Skill Manager** and creates a **Skill Instance** for each one.
+
+---
+
+# 🧩 **2. Creating a Skill Definition**
+
+To create a new skill:
+
+1. Right-click in the Content Browser
+2. Choose:  
+   **Primary Data Asset → Skill Definition**
+3. Name it something clear, such as:
+
+   - `DA_Skill_Swordsmanship`
+   - `DA_Skill_Carpentry`
+   - `DA_Skill_Logging`
+
+Then assign your properties.
+
+> **📸 Screenshot Needed**  
+> A Skill Definition open in the Details panel, showing common fields.
+
+---
+
+# 🧱 **3. Skill Definition Fields**
+
+Below is a breakdown of all major fields and what they control.
+
+---
+
+## **3.1 Display Fields**
+
+### **Skill Name**
+
+The name shown in UI and tooltips.
+
+### **Description**
+
+Optional text for tooltips or menus.
+
+### **Icon**
+
+Texture used in skill lists, talent trees, XP bars.
+
+> **📌 Tip:** Use 256×256 or 512×512 for clean UI scaling.
+
+---
+
+## **3.2 Gameplay Tag (Required)**
+
+Each Skill Definition must have **one unique Gameplay Tag** that identifies the skill.
+
+Examples:
+
+```
+Skill.Combat.Sword
+Skill.Crafting.Carpentry
+Skill.Gathering.Logging
+Skill.Magic.Fire
+```
+
+UMSS does **not** require specific tag names — you define your own taxonomy.
+
+The Gameplay Tag is used for:
+
+- Awarding XP
+- Looking up the skill at runtime
+- Parent/child linking
+- UI grouping
+- Talent tree gating
+
+---
+
+## **3.3 Max Level**
+
+Set the maximum level the skill can reach.
+
+Common values:
+
+- 10 → simple skill
+- 50 → RPG-style
+- 100 → MMO-style
+- 1000 → use-based skills (e.g., Elder Scrolls style)
+
+UMSS does not impose limits.
+
+---
+
+## **3.4 XP Curve (Level Requirements)**
+
+Controls how much XP is needed per level.
+
+Options include:
+
+- **Flat** — same XP each level
+- **Linear** — grows evenly
+- **Quadratic** — grows faster
+- **Custom Curve Table** — designer-defined progression
+- **Exponential** — endgame difficulty
+
+The XP curve dictates how quickly a skill levels.
+
+---
+
+## **3.5 Parent Skill (Optional)**
+
+Link this skill to a **parent**, enabling hierarchical progression:
+
+### Examples:
+
+```
+Combat → One-Handed
+Combat → Two-Handed
+Crafting → Blacksmithing → Swordsmithing
+Gathering → Logging → Fine Logging
+```
+
+You assign this by selecting another Skill Definition as the parent.
+
+Parent/child relationships enable:
+
+- Shared XP (optional)
+- Unlock dependencies
+- Categorization
+- Talent tree gating
+
+The XP flow rules are explained on the **XP & Progression** page.
+
+---
+
+## **3.6 Category / Group Tags (Optional)**
+
+You can assign extra Gameplay Tags for UI grouping or filtering.
+
+Examples:
+
+```
+UI.Category.Combat
+UI.Category.Crafting
+SkillType.Gathering
+SkillType.Profession
+```
+
+These are designer-defined.
+
+---
+
+## **3.7 Talent Tree Fields (Optional)**
+
+If the skill participates in a talent tree, this is where you assign:
+
+- Node ID
+- Node prerequisites
+- Node costs
+- Node icon
+- Any unlock effects
+
+Most projects only need these fields for RPG/MMO systems.
+
+Pure XP-based projects can ignore them.
+
+---
+
+## **3.8 Metadata (Optional)**
+
+Depending on your version of UMSS, metadata may include:
+
+- Default XP modifiers
+- Whether XP gains notify the UI
+- Whether the skill is hidden
+- Whether the skill is allowed on NPCs
+- Optional custom effects on level-up
+
+These settings allow deeper customization without touching C++.
+
+---
+
+# 🔁 **4. How Skill Definitions Become Skill Instances**
+
+At runtime:
+
+1. UMSS loads the Skill Manager
+2. The Skill Component creates **Skill Instances** for every Skill Definition
+3. Each Instance tracks:
+
+   - Current Level
+   - Current XP
+   - Parent relationships
+   - Talent unlocks
+4. Skill Instances exist only during gameplay
+5. Their state can be saved/loaded however your game handles persistence
+
+Skill Definitions = blueprint  
+Skill Instances = live data
+
+---
+
+# 🧪 **5. Example Skill Definition Setup**
+
+Here’s a simple combat skill:
+
+```
+Name: Swordsmanship
+Gameplay Tag: Skill.Combat.Sword
+Max Level: 50
+XP Curve: Linear 100 XP / level
+Parent Skill: Combat (Skill.Combat)
+```
+
+A crafting skill:
+
+```
+Name: Carpentry
+Gameplay Tag: Skill.Crafting.Carpentry
+Max Level: 100
+XP Curve: Curve Table (Designer-Created)
+Parent Skill: Crafting
+Category Tag: UI.Category.Crafting
+```
+
+A use-based gathering skill:
+
+```
+Name: Logging
+Gameplay Tag: Skill.Gathering.Logging
+Max Level: 1000
+XP Curve: Flat 25 XP / level
+Hidden: false
+```
+
+---
+
+# 📌 **Where to Go Next**
+
+To learn how XP flows:
+
+👉 [XP & Progression](/warpath-studios/umf/xp-and-progression-tjj3c1m60q-76yp5k01euv2)
+
+To build branching specializations and perks:
+
+👉 [Talent Trees](/warpath-studios/umf/talent-trees-aryfhah42z-75gh2iykc61l)
+
+To add the Skill Component to your player:
+
+👉 [Component Integration](/warpath-studios/umf/component-integration-gjewwikl10-9xqrw967vi0u)

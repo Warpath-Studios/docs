@@ -1,0 +1,105 @@
+---
+title: "Working With Attributes in C++"
+description: "This page mirrors your UMF style: simple examples with short explanations."
+---
+
+This page mirrors your UMF style: simple examples with short explanations.
+
+---
+
+## **Accessing the Component**
+
+```
+UAttributeManagerComponent* Attr = FindComponentByClass<UAttributeManagerComponent>();
+```
+
+---
+
+## **Reading Attribute Values**
+
+```
+float Health = Attr->GetAttributeValue("Health");
+float Stamina = Attr->GetAttributeValue(FName("Stamina"));
+```
+
+---
+
+## **Modifying Attributes**
+
+```
+Attr->AddToAttribute("Health", 25.f);
+Attr->SubtractFromAttribute("Stamina", 10.f);
+Attr->SetAttributeValue("Defense", 50.f);
+```
+
+Under the hood:
+
+- Modifiers are validated
+- Link definitions re-evaluate
+- Replication updates clients
+- Relevant events fire
+
+---
+
+## **Applying Effects**
+
+```
+Attr->ApplyEffect(EffectDefinition, Instigator);
+```
+
+Effects come from `UEffectDefinition` assets.
+
+---
+
+## **XP & Leveling**
+
+```
+Attr->AddXP("Logging", 50.f);
+int32 NewLevel = Attr->GetAttributeLevel("Logging");
+```
+
+XP uses curve tables defined in the profile’s progression config.
+
+---
+
+## **Listening for Events**
+
+Typical method:
+
+```
+Attr->OnAttributeChanged.AddDynamic(this, &ThisClass::HandleChange);
+```
+
+Or performance version (preferred):
+
+```
+Attr->OnAttributeChangedNative.AddUObject(this, &ThisClass::HandleChange);
+```
+
+---
+
+## **Full C++ Example**
+
+```
+void AMyCharacter::ConsumeStamina(float Amount)
+{
+    if (auto* Attr = FindComponentByClass<UAttributeManagerComponent>())
+    {
+        Attr->SubtractFromAttribute("Stamina", Amount);
+
+        if (Attr->GetAttributeValue("Stamina") <= 0)
+        {
+            // Character is exhausted
+        }
+    }
+}
+```
+
+---
+
+## **Developer Notes**
+
+- All internal maps use `FName` handles for speed.
+- Modifiers and effects are executed in deterministic order.
+- C++ offers better performance for rapid-fire attribute updates (combat, stamina drain).
+- Every call is multiplayer-safe by default.

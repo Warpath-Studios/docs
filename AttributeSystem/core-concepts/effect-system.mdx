@@ -1,0 +1,97 @@
+---
+title: "Effect System"
+description: "UMAS includes a lightweight effect framework inspired by GAS, but simpler."
+---
+
+UMAS includes a lightweight effect framework inspired by GAS, but simpler.
+
+---
+
+## **Types of Effects**
+
+Effects can:
+
+- Add value
+- Subtract value
+- Multiply value
+- Override value
+- Apply timed buffs/debuffs
+- Apply periodic modifications
+- Modify regen
+- Apply custom calculations
+
+---
+
+## **EffectDefinition**
+
+Defined in data assets.
+
+Key fields:
+
+- Magnitude
+- Duration
+- Period (optional)
+- Tags
+- Calculation type (flat / scaling / custom)
+- Stacking rules
+- Modifier operations
+
+---
+
+## **ActiveEffect**
+
+Runtime representation of an applied effect.
+
+Stores:
+
+- Remaining time
+- Periodic timer
+- Cached magnitude
+- Instigator
+- Stacks
+- Flags for removal or refresh
+
+---
+
+## **EffectManagerComponent**
+
+Nested inside the AttributeManager.
+
+Handles:
+
+- Applying effects
+- Removing effects
+- Ticking periodic effects
+- Resolving modifier contributions
+- Triggering attribute updates
+
+---
+
+## **CalculationDefinition**
+
+Optional advanced object.
+
+Handles:
+
+- Advanced math
+- Dynamic magnitude
+- Attribute-based scaling
+- Conditional effects
+
+Example:  
+“Deal bonus damage equal to 20% of Strength.”
+
+---
+
+## **Designer Notes**
+
+- Most users will use flat + percentage modifiers only.
+- Effects excel at buffs, debuffs, food/drink bonuses, poison, regen, etc.
+
+---
+
+## **Developer Notes**
+
+- Effect system is generic. Can target any attribute.
+- Follows a clean chain-of-responsibility architecture.
+- Modifiers apply in correct order for deterministic outcomes.
