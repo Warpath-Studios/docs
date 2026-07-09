@@ -1,9 +1,9 @@
 ---
-title: "Inventory System"
+title: "Overview"
 description: "The Ultimate Multiplayer Inventory (UMI) system is a complete, production-ready item management framework for Unreal Engine 5+, designed by WarPath Studios."
 ---
 
-The **Ultimate Multiplayer Inventory (UMI)** system is a complete, production-ready item management framework for Unreal Engine 5+, designed by WarPath Studios.  
+The **Ultimate Multiplayer Inventory (UMI)** system is a complete, production-ready item management framework for Unreal Engine 5\+, designed by WarPath Studios.\
 UMI provides core systems for:
 
 - Inventory & storage
@@ -20,15 +20,15 @@ UMI is built **multiplayer-first**, fully replicated, and optimized for authorit
 
 # **Design Philosophy**
 
-- **Multiplayer First**  
+- **Multiplayer First**\
   All operations follow strict server authority and validated RPCs.
-- **Extensible Architecture**  
-  Blueprint and C++ friendly with well-defined extension points.
-- **Data-Driven**  
+- **Extensible Architecture**\
+  Blueprint and C\+\+ friendly with well-defined extension points.
+- **Data-Driven**\
   Items, recipes, loot tables, and actions defined as Primary Data Assets.
-- **Integration Ready**  
+- **Integration Ready**\
   Optional integrations with GAS, Enhanced Input, and Common UI.
-- **Performance Focused**  
+- **Performance Focused**\
   Optimized replication, lightweight structs, async loading, and container-level networking.
 
 ---
@@ -78,14 +78,14 @@ UMI is built **multiplayer-first**, fully replicated, and optimized for authorit
 
 ### **Crafting System**
 
-*(Optional — only if Crafting plugin is installed)*
+_(Optional — only if Crafting plugin is installed)_
 
 - SimpleQueue, MultiSlot, MaterialProcessing modes
 - Data Asset–driven recipes
-- Ingredient + tool + fuel requirements
+- Ingredient \+ tool \+ fuel requirements
 - Optional ingredients with bonus effects
 - Skill hooks for bonuses or perk effects
-- Pause/resume + progress tracking
+- Pause/resume \+ progress tracking
 
 ### **Interaction System**
 
@@ -116,7 +116,7 @@ UMI is built **multiplayer-first**, fully replicated, and optimized for authorit
 
 ### **Player Profile**
 
-- Central hub for all player systems  
+- Central hub for all player systems\
   (Inventory, equipment, hotbar, crafting, abilities, etc.)
 - Handles UI blocking
 - Handles teleportation & location management
@@ -135,7 +135,7 @@ UMI is built **multiplayer-first**, fully replicated, and optimized for authorit
 
 ### Player Character
 
-```
+```text
 PlayerProfileComponent  (central hub)
 InventoryComponent      (item storage)
 HotbarComponent         (quick access)
@@ -146,7 +146,7 @@ AbilitySystemComponent  (optional GAS integration)
 
 ### Crafting Stations
 
-```
+```text
 CraftingComponent
 InventoryComponent (inputs)
 InventoryComponent (outputs)
@@ -154,14 +154,14 @@ InventoryComponent (outputs)
 
 ### World Containers
 
-```
+```text
 InventoryComponent
 SaveableContainerComponent
 ```
 
 ### Data Asset Architecture
 
-```
+```text
 ItemDataAsset               (items)
 ItemActionSet               (action behavior)
 CraftingRecipeDataAsset     (recipes)
@@ -185,7 +185,7 @@ LootTable                   (loot)
 
 # **System Requirements**
 
-- Unreal Engine 5.0+
+- Unreal Engine 5.0\+
 - Gameplay Ability System (optional, recommended)
 - Enhanced Input
 - Common UI

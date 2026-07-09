@@ -197,9 +197,9 @@
         ]
       }
     ],
-    "groups": [
+    "tabs": [
       {
-        "group": "Inventory System",
+        "tab": "Inventory System",
         "pages": [
           "InventorySystem/index",
           {
@@ -365,16 +365,21 @@
         ]
       },
       {
-        "group": "Foliage System",
-        "pages": [
-          "FoliageSystem/index",
-          "FoliageSystem/how-it-works",
-          "FoliageSystem/integration-with-umi",
-          "FoliageSystem/setup-instructions",
-          "FoliageSystem/using-the-plugin",
-          "FoliageSystem/limitations",
-          "FoliageSystem/faq",
-          "FoliageSystem/troubleshooting"
+        "tab": "Foliage System",
+        "groups": [
+          {
+            "group": "Foliage System",
+            "pages": [
+              "FoliageSystem/index",
+              "FoliageSystem/how-it-works",
+              "FoliageSystem/integration-with-umi",
+              "FoliageSystem/setup-instructions",
+              "FoliageSystem/using-the-plugin",
+              "FoliageSystem/limitations",
+              "FoliageSystem/faq",
+              "FoliageSystem/troubleshooting"
+            ]
+          }
         ]
       }
     ]
