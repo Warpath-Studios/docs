@@ -1,0 +1,55 @@
+---
+title: "Husbandry System"
+description: "A complete animal husbandry and lifecycle system featuring taming handoff, ownership, feeding, breeding with inherited genetics, aging, production, health, pastures, and slaughter."
+---
+
+The Ultimate Multiplayer Husbandry System (UMHS) is a **complete animal husbandry and lifecycle system**: ownership, feeding, breeding with inherited genetics, pregnancy, aging through life stages, production schedules (milk, eggs, wool, manure), animal health, pastures, shelter, slaughter with butchering outputs, and offline catch-up simulation.
+
+It's fully replicated and server authoritative, data-driven via Data Assets, with soft integration hooks for any inventory, skill, time, or weather system. Animals using this plugin are assumed already tamed — taming itself is handled by the standalone [Taming System](/TamingSystem/index) (or any other upstream system), which hands off here once domestication completes.
+
+## **Key Features**
+
+- **Ownership** — stable per-player ownership identity via `SetOwnerPlayer` / `ReleaseOwnership`
+- **Feeding & watering** — hunger/thirst needs with starvation and dehydration consequences
+- **Breeding** — fertility rolls, gestation, litters, breeding cooldowns, optional auto-breeding
+- **Genetics** — tag-keyed inherited traits (growth, yield, fertility, hardiness) with mutation, plus cosmetic variants
+- **Pregnancy & offspring** — offspring actors spawn with blended genetics and persist through saves
+- **Aging** — data-driven life stages with per-stage meshes, smooth growth scaling, and optional old-age death
+- **Products** — milk, eggs, wool, manure on per-species schedules; collect by interaction, or use `SpawnPickup` to drop a physical actor per unit, with a live-count cap that bounds offline catch-up
+- **Animal health** — sickness from neglect and dirty pastures, medicine, natural recovery
+- **Pastures** — capacity by species footprint, feed/water troughs, cleanliness, manure collection
+- **Shelter** — shelter slots with an overridable query to wire any building system
+- **Slaughter & butchering** — stage/health/genetics-scaled outputs through inventory hooks
+- **Offline simulation** — all state is timestamped; worlds catch up correctly after any downtime
+
+## **Architecture**
+
+- `UAnimalComponent` — attach to any replicated actor; owns all per-animal state (five replicated structs)
+- `UPastureComponent` — attach to any actor to define a pasture
+- `UUMHSPlayerComponent` — attach to your PlayerController or pawn; routes client interactions to the server
+- `UAnimalSpeciesDefinition` — one Primary Data Asset per species drives every rule
+- `UUMHSSubsystem` — world clock, hourly simulation fan-out, offspring spawning
+- `UUMHSSaveHandler` — save/load bridge (UMI save registry when present; standalone byte APIs otherwise)
+- `UUMHSGeneticsLibrary` — inheritance math and Blueprint helpers
+
+## **Multiplayer**
+
+Fully server authoritative. Every mutator no-ops without authority; clients call `UUMHSPlayerComponent`'s `Server_*` RPCs (validated server-side, including a range check). Clients react through replicated state and `BlueprintAssignable` events.
+
+## **Integration**
+
+UMHS has **zero hard dependencies** on other plugins:
+
+- **Taming**: receives domesticated creatures from the [Taming System](/TamingSystem/index) hand-off (or any other upstream system)
+- **Time**: binds to a TimeManager-style world time subsystem via reflection when present; otherwise runs its own clock
+- **Weather**: mirrors temperature from a WorldClimate-style subsystem via reflection for comfort/exposure rules
+- **Inventory / Skills / Interaction**: override `BlueprintNativeEvent` hooks (`OnConsumeFeedItem`, `OnGrantItems`, `OnAwardHusbandryXP`, `GetInteractionPrompt`, ...) on the components
+- **Saves**: with UMI installed, animals and pastures save automatically through the save registry; without it, use `RequestSaveData` / `ApplyLoadData` and the `OnGetSaveData` / `OnLoadSaveData` delegates
+
+## **Quick Start**
+
+1. Enable the plugin and create an `AnimalSpeciesDefinition` asset (e.g. a cow: life stages Baby/Juvenile/Adult, a Milk product, butcher outputs)
+2. Place an `AUMHSExampleAnimal` (or add `UAnimalComponent` to your own animal actor) and set its Species
+3. Add `UUMHSPlayerComponent` to your PlayerController
+4. Optionally place an `AUMHSExamplePasture` and stock its troughs
+5. Test with console commands: `umhs.AdvanceHours 24`, `umhs.DumpAnimals`

@@ -245,6 +245,18 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "Taming System",
+        "pages": [
+          "TamingSystem/index"
+        ]
+      },
+      {
+        "tab": "Husbandry System",
+        "pages": [
+          "HusbandrySystem/index"
+        ]
       }
     ]
   },
