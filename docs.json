@@ -40,6 +40,24 @@
         ]
       },
       {
+        "tab": "Foliage System",
+        "pages": [
+          "FoliageSystem/index",
+          {
+            "group": "Foliage System",
+            "pages": [
+              "FoliageSystem/how-it-works",
+              "FoliageSystem/integration-with-umi",
+              "FoliageSystem/setup-instructions",
+              "FoliageSystem/using-the-plugin",
+              "FoliageSystem/limitations",
+              "FoliageSystem/faq",
+              "FoliageSystem/troubleshooting"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Inventory System",
         "pages": [
           "InventorySystem/index",
@@ -226,24 +244,6 @@
           "SkillSystem/extending-the-system",
           "SkillSystem/troubleshooting",
           "SkillSystem/changelog"
-        ]
-      },
-      {
-        "tab": "Foliage System",
-        "pages": [
-          "FoliageSystem/index",
-          {
-            "group": "Foliage System",
-            "pages": [
-              "FoliageSystem/how-it-works",
-              "FoliageSystem/integration-with-umi",
-              "FoliageSystem/setup-instructions",
-              "FoliageSystem/using-the-plugin",
-              "FoliageSystem/limitations",
-              "FoliageSystem/faq",
-              "FoliageSystem/troubleshooting"
-            ]
-          }
         ]
       },
       {
