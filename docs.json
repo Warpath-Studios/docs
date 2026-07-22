@@ -58,6 +58,12 @@
         ]
       },
       {
+        "tab": "Farming System",
+        "pages": [
+          "FarmingSystem/index"
+        ]
+      },
+      {
         "tab": "Foliage System",
         "pages": [
           "FoliageSystem/index",
