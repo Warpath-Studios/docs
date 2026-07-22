@@ -1,0 +1,46 @@
+---
+title: "Building System"
+description: "A modular building system for Unreal Engine with socket-based snapping, structural integrity, permission-gated structure actions, and multiplayer support."
+---
+
+The Ultimate Multiplayer Building System (UMBS) is a **modular building system** with socket-based piece snapping, structural integrity with support propagation and collapse, permission-gated structure actions, and full multiplayer replication.
+
+## **Key Features**
+
+- **Build mode & placement** — enter/exit build mode with a `UBuildableDefinition`, trace-based placement with configurable trace distance and collision fallback
+- **Socket-based snapping** — finds all valid snap candidates near the desired location, sorted by distance, with support for cycling between candidates (for when several sockets are close together) instead of having to reposition the camera
+- **Spline placement** — a separate workflow for multi-piece runs (walls, fences, palisades): click a start point, add waypoints with the spline updating live, then confirm to batch-place every segment in one server request
+- **Structural integrity** — a world subsystem that tracks clusters of connected buildables, propagates support from grounded/foundation pieces, and collapses unsupported pieces either instantly or in a staggered, delayed sequence with room for VFX
+- **Permission system** — a five-tier permission model (`None < Public < Authorized < Owner < Admin`), each mapped to an explicit set of allowed structure actions (Place, Destroy, Repair, Move, Replace, Upgrade, Downgrade, Open/Close, Toggle, Lock/Unlock, Authorize/RevokeAuthorization, ChangePermissionProfile, Custom)
+- **Structure lifecycle events** — delegates for destroyed, demolished (with refund hooks), repaired, replaced, and upgraded
+- **Resource costs** — buildable definitions carry a list of resource/quantity costs, resolved through an external cost provider interface
+- **Save/load hooks** — both per-buildable and world-level (`BuildSubsystem`) delegates for gathering and applying save data
+- **Multiplayer** — placement and spline placement go through `Server`/`Client` reliable RPCs; state (build mode, current definition) is replicated
+
+## **Architecture**
+
+- `UBuildingComponent` — attach to the player character/pawn; owns build mode, preview spawning, single-piece placement, and snap-candidate search/cycling
+- `USplinePlacementComponent` — companion component (requires `UBuildingComponent` on the same actor) for multi-segment spline-based placement
+- `ABuildableActor` — base class for all placed structures; owns health, ownership, and lifecycle delegates (destroyed, demolished, repaired, replaced, upgraded, permission profile changed)
+- `ABuildablePreview` — the client-side ghost/preview actor shown while placing
+- `UBuildableDefinition` — data asset describing a placeable piece: sockets, costs, collision box, spline support, etc.
+- `UBuildSubsystem` — world subsystem for action validation (`FActionValidationResult`) and world-level save integration
+- `UStructuralIntegritySubsystem` — world subsystem for support propagation and collapse (instant or staggered)
+- `UBasicStructureHealthComponent` — a ready-made `IBuildableHealth` implementation
+- `USocketSnapTester` — utility for testing/debugging socket compatibility
+- Interfaces for integration: `IBuildCostProvider`, `IBuildPermissionResolver`, `IBuildPlayerIdentity`, `IBuildRulesProvider`, `IBuildUnlockProvider`, `IBuildableHealth`
+
+## **Multiplayer**
+
+Placement requests go through `Server_RequestPlaceBuildable` / `Server_RequestPlaceSpline` (reliable server RPCs), with `Client_NotifyPlacementResult` / `Client_NotifySplinePlacementResult` reporting the outcome back. Build-mode state and the current buildable definition are replicated so all clients see consistent state.
+
+## **Integration**
+
+BuildingSystem has no hard dependency on any inventory, permission, or identity plugin — each is resolved through a small interface, implemented by the consuming project:
+
+- **Costs**: `IBuildCostProvider`
+- **Permissions**: `IBuildPermissionResolver`, `EBuildPermissionTier` + `FBuildPermissionProfile`
+- **Player identity**: `IBuildPlayerIdentity`
+- **Placement/build rules**: `IBuildRulesProvider`, resolved from game mode, game state, or a world subsystem
+- **Unlocks**: `IBuildUnlockProvider`, resolved from game mode or game state
+- **Health**: `IBuildableHealth`, with `UBasicStructureHealthComponent` provided as a default implementation
