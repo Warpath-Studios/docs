@@ -1,0 +1,42 @@
+---
+title: "Dialogue System"
+description: "An intent-driven, multiplayer-safe dialogue system with optional LLM/RAG support, designed for deterministic gameplay and clean architecture."
+---
+
+The Dialogue System is an **intent-driven, multiplayer-safe dialogue system** with optional LLM/RAG support, designed for deterministic gameplay and clean architecture.
+
+**Critical design rule**: if you remove the dialogue system, your game must still function. Dialogue emits events; other systems listen. Dialogue never listens back.
+
+## **What this system is — and isn't**
+
+- **Is**: intent-driven (nodes represent meaning, not just sentences), deterministic and server-authoritative, multiplayer-safe, event-driven, LLM-ready (optional text generation that never affects game logic), a presentation layer only
+- **Is not**: a Quest System (dialogue may trigger quests but doesn't manage them), an Economy System (may emit trade events but doesn't handle transactions), or NPC AI (doesn't control NPC behavior or decision-making)
+
+## **Architecture**
+
+- `UDialogueNode` — a single point in a conversation: node ID, intent tag (e.g. `Dialogue.Intent.RequestWork`), always-required fallback text, escalation level, read-only conditions, fire-and-forget events, and player choices
+- `UDialogueAsset` — container for a complete conversation's nodes, plus a start-node reference; the editor graph is visualization only and can be removed without breaking runtime behavior
+- `UDialogueManager` — server-authoritative runtime component: starts/ends sessions, processes choices, fires events, manages escalation, coordinates with an optional LLM provider
+- `FDialogueEvent` — fire-and-forget events carrying a gameplay tag and optional payload (e.g. `Dialogue.Event.QuestAccepted`, `Dialogue.Event.ReputationChange`, `Dialogue.Event.ItemGiven`) for other systems to listen to
+- `UDialogueCondition` — read-only, deterministic checks gating node/choice availability (built-in: `HasTag`, `NumericComparison`, `EscalationLevel`)
+- `IDialogueLLMProvider` — optional interface for AI-generated display text; can replace text or adjust tone, but can never create quests, change rewards, unlock content, modify reputation, write to world state, or affect dialogue flow. If generation fails or is disabled, fallback text is always used instead
+
+## **Escalation**
+
+Escalation affects **tone**, not **logic**. Choices can raise it (`EscalationChange`), and nodes can gate on it (`UDialogueCondition_EscalationLevel`) — higher escalation produces a more aggressive/desperate tone from the LLM, but the same gameplay outcomes.
+
+## **Multiplayer**
+
+All dialogue logic runs on the server; `UDialogueManager` must live on a server-authoritative actor, and player choices are sent to the server via RPC for validation. LLM-generated text is cosmetic only — different clients can see different generated text without affecting gameplay, since game logic is driven by intent tags and events, never display text. All context must be injected upfront; dialogue never queries game systems directly, keeping behavior deterministic across server and clients.
+
+## **Validation**
+
+Both nodes and whole dialogue assets support built-in validation (`ValidateNode`, `ValidateDialogue`): unique node IDs, every node has an intent tag and fallback text, every choice target exists, the start node is valid, and unreachable nodes are flagged as warnings.
+
+## **Integration**
+
+Dialogue never depends on other gameplay systems — it only emits events for them to listen to:
+
+- **Quests**: a quest system binds to `OnDialogueEventNative` and reacts to tags like `Dialogue.Event.QuestAccepted`
+- **Reputation / inventory / any other system**: same pattern — listen for the relevant `Dialogue.Event.*` tag and payload
+- **LLM/RAG**: implement `IDialogueLLMProvider`; entirely optional, and the system is fully functional with LLM disabled
