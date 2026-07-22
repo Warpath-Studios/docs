@@ -1,0 +1,42 @@
+---
+title: "Taming System"
+description: "A generic, data-driven taming component that attaches to any creature actor and drives the wild-to-domesticated transition, then hands off to any ownership/husbandry system."
+---
+
+TamingSystem is a **generic, data-driven taming component** that attaches to any creature actor and drives the Wild → Suspicious → Tolerant → Bonded → Domesticated flow, then hands off to whatever manages owned/domesticated animals — for example the [Husbandry System](/HusbandrySystem/index).
+
+The plugin is fully multiplayer and **server authoritative**, with a standalone save fallback that works with or without UMI (Ultimate Multiplayer Inventory).
+
+## **Key Features**
+
+- Five-stage taming state machine (`Wild`, `Suspicious`, `Tolerant`, `Bonded`, `Domesticated`), always derived from a single `CurrentProgress` value
+- Six configurable taming methods as a Blueprint bitmask: Passive Feeding, Repeated Interaction, Immobilize And Calm, Raise From Young, Bonding Over Time, Item Assisted
+- Trust / Fear / Aggression vitals replicated as one unit
+- Approach reactions (Ignore → Alert → Threaten → Flee) scaled by trust, plus a separate "has noticed" observation radius for AI
+- Multi-player contribution tracking with configurable ownership resolution (highest contribution, final contributor, first contributor, or an external resolver interface)
+- Juvenile handling (`RaiseFromYoung` gating, bonus multiplier)
+- Damage interruption with trust penalties and possible regression
+- Calmed-state windows that gate `ImmobilizeAndCalm` and dampen aggression
+- Standalone save/load fallback that works without any other WarPath plugin installed
+- Optional soft dependency on UMI; no hard dependency on any inventory system
+
+## **Architecture**
+
+- `UTamingComponent` — the only component in the plugin; owns all per-creature taming state. No client-callable `UFUNCTION`s — `ProcessInteraction` is a plain, authority-checked method meant to be called from your own already-server-authoritative interaction code path, not exposed as an RPC itself
+- `UTamingProfileDataAsset` — per-species configuration: stage thresholds, allowed methods, ownership resolution mode
+- `UTamingSaveHandler` — subsystem-level save/load bridge
+- `BTDecorator_TamingStageAtLeast` / `BTService_TamingStageMonitor` — Behavior Tree nodes for gating and monitoring AI behavior by taming stage
+- Interfaces for integration: `ITamingHandoffReceiver`, `ITamingOwnershipResolver`, `ITamingPlayerIdentityProvider`, `ITamingSkillModifierProvider`
+
+## **Multiplayer**
+
+Fully server authoritative. `ProcessInteraction` independently validates range, line of sight, method eligibility, item tags, claim-lock, and cooldown regardless of caller — it never trusts the calling controller's identity or a skill-modifier override to have been pre-validated.
+
+## **Integration**
+
+TamingSystem has no hard dependency on any inventory or ownership plugin:
+
+- **Items**: `PresentedItemTags` is asserted by the caller to represent items already verified and consumed by the caller's own inventory system — TamingSystem only checks tag membership against the profile, never possession
+- **Skill modifiers**: resolved via `ITamingSkillModifierProvider` on the controller/pawn
+- **Player identity**: resolved via `ITamingPlayerIdentityProvider`, with a shared default fallback
+- **Hand-off**: on reaching `Domesticated`, hands off to `HandoffTargetOverride` (or the owning actor) via `ITamingHandoffReceiver` — the [Husbandry System](/HusbandrySystem/index) is the intended consumer of this hand-off, but any system can implement the interface
