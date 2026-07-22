@@ -58,6 +58,12 @@
         ]
       },
       {
+        "tab": "Husbandry System",
+        "pages": [
+          "HusbandrySystem/index"
+        ]
+      },
+      {
         "tab": "Inventory System",
         "pages": [
           "InventorySystem/index",
@@ -250,12 +256,6 @@
         "tab": "Taming System",
         "pages": [
           "TamingSystem/index"
-        ]
-      },
-      {
-        "tab": "Husbandry System",
-        "pages": [
-          "HusbandrySystem/index"
         ]
       }
     ]
