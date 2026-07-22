@@ -1,0 +1,38 @@
+---
+title: "Quest System"
+description: "A networked quest system with data-driven quest definitions, a visual quest graph editor, player quest logs, and event-driven progression."
+---
+
+The Ultimate Multiplayer Quest System (UMQS) is a **networked quest system** with data-driven quest definitions, a visual graph editor for authoring quests, player quest logs, and event-driven progression. The editor graph is editor-only and adds no runtime overhead — at runtime, quests run from the compiled quest definition data.
+
+## **Key Features**
+
+- **Visual quest editor** — a dedicated graph editor for `UQuestDefinition` assets: a green Root node (the quest), blue Objective nodes, and gold Reward nodes, connected and compiled back into the quest data
+- **Objective types** — Kill, Collect, Interact, Reach Location — driven by gameplay-tag event matching
+- **Event-driven progression** — `NotifyQuestEvent` finds active quests with matching event tags, increments objective progress, completes objectives at target count, and completes the quest once all objectives are done
+- **Retroactive objective satisfaction** — via `IQuestStateProvider`, other systems (inventory, crafting, skills) can expose player state/actions as quest-relevant event tags without depending on the quest system; the validation system queries all registered providers when a quest is accepted so already-satisfied objectives complete immediately
+- **Quest chains** — `PrerequisiteQuests` for quest-to-quest dependencies
+- **Multiplayer replication** — `UQuestLogComponent` must live on `PlayerState` (not the character) for correct replication
+
+## **Architecture**
+
+- `UQuestLogComponent` — attach to `PlayerState`; owns accept/abandon/track requests and the player's quest log
+- `UQuestDefinition` — data asset describing one quest: ID, display name, description, recommended level, objectives, rewards, prerequisites
+- `AQuestGiverNPC` — ready-made quest giver actor; also usable via `IQuestGiverInterface` on any custom actor (`GetAvailableQuests`, `CanOfferQuestToPlayer`)
+- `IQuestStateProvider` — interface for systems to expose retroactive quest-relevant state
+- `IQuestRewardReceiverInterface` — implement on `PlayerController` (or another actor) to receive and apply quest rewards; called **server-side only** on completion
+- `UQuestValidationLibrary` — validation helpers
+- `UWorldTimeSubsystem` — world-time subsystem used by the quest system
+- Editor module (`UMQSEditor`) — the quest graph, its nodes (Root/Objective/Reward), schema, and asset-browser integration; entirely editor-only
+
+## **Multiplayer**
+
+`UQuestLogComponent` must be on `PlayerState` for correct replication — not on the character. Client Blueprint calls go through `Request*` functions (e.g. `RequestAcceptQuest`, `RequestAbandonQuest`), not `Server*` RPCs directly; quest events should be called on the server or auto-forwarded there.
+
+## **Integration**
+
+UMQS has no hard dependency on inventory, crafting, or skill systems — each integrates through one of two seams:
+
+- **Retroactive state**: implement `IQuestStateProvider` on your system to expose event tags for already-true player state (e.g. `Event.Quest.Craft.StoneAxe` for an item the player already crafted)
+- **Rewards**: implement `IQuestRewardReceiverInterface` on your `PlayerController` to apply `FQuestReward` (XP, items, currencies, loot rolls) when a quest completes
+- **Progression events**: any gameplay system calls `NotifyQuestEvent` with a matching `FGameplayTag` (e.g. `Event.Quest.Kill.Wolf`) to advance objectives
