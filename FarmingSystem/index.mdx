@@ -1,0 +1,43 @@
+---
+title: "Farming System"
+description: "A modular, data-driven farming system for Unreal Engine 5 with crop growth stages, soil moisture simulation, seasonal gating, multi-harvest crops, and soft integrations for time, weather, inventory, and skill plugins."
+---
+
+The Ultimate Multiplayer Farming System (UMFS) is a **modular, data-driven farming system**: crop growth stages, soil moisture simulation, seasonal growth gating, multi-harvest crops, off-season crop death, and crop disease — with soft integration hooks for any time, weather, inventory, or skill plugin. Multiplayer-ready with full replication.
+
+The system is **component-based**: attach `UFarmingComponent` to any actor (for example, a farm plot actor from your building system) to make it a functional farm plot.
+
+## **Key Features**
+
+- **Data-driven crop definitions** via `UCropDataAsset` — seed/harvest item tags, multi-stage growth durations, valid seasons, yield range, multi-harvest support
+- **Multi-stage crop growth** over in-game time, with lazy, event-driven updates (no per-tick polling)
+- **Seasonal growth gating** — crops pause growth when the current season isn't in their `ValidSeasons`, and can be configured to die off-season
+- **Soil moisture simulation** — a pluggable strategy pattern (`UFarmingSoilMoistureStrategy`) with both a simple, marketplace-friendly strategy and a more advanced simulation strategy; tracks watering, daily decay (evaporation/drainage influenced by temperature, humidity, and soil type), drowning from overwatering, and insufficient-water detection
+- **Crop disease** — crops can become diseased (`InfectCrop`) and be cured (`CureCrop`), with dedicated events for both
+- **Multiplayer replication** — farming state is replicated, with `OnRep_FarmingState()` firing on clients and authority checks gating all mutating actions
+- **Save/load persistence** — `SerializeState` / `DeserializeState` on the component
+- **Debug console commands** — `Farm.ForceGrow`, `Farm.ForceHarvest` via `UFarmingDebugCommands`
+
+## **Architecture**
+
+- `UFarmingComponent` — the main component; owns planting, growth, harvesting, and save state for one farm plot
+- `UCropDataAsset` — per-crop configuration: growth stages, seasons, yield, item tags
+- `UFarmingSoilMoistureStrategy` (abstract) — moisture calculation strategy, with `SimpleSoilMoistureStrategy` and `AdvancedSoilMoistureStrategy` implementations provided
+- `UFarmingSubsystem` — world-level subsystem
+- `UFarmingSystemSettings` — project settings
+- `UFarmingDebugCommands` — cheat-manager console commands for testing
+- `AFarmPlotDemoActor` — example farm plot actor
+
+## **Multiplayer**
+
+Server authoritative: planting, harvesting, and growth updates must occur on the server. `FFarmingState` is replicated, and clients react through `OnRep_FarmingState()` and broadcast events. Client-side prediction is intentionally not implemented — farming actions are slow-paced enough not to need it.
+
+## **Integration**
+
+UMFS has no hard dependency on any other plugin — each integration point is a `BlueprintNativeEvent` hook on `UFarmingComponent` that you override:
+
+- **World time / season**: `OnGetWorldTime` — supply the current day and `ESeason`; call `UpdateGrowth` on your day-change event
+- **Inventory (UMI)**: `OnConsumeSeedItem` / `OnAddHarvestedItems`, using `Item.Seed.<CropType>` / `Item.Food.<CropType>` gameplay tags
+- **Skills (UMSS)**: `OnAwardFarmingXP` — 5 XP for planting, 25 XP for harvesting by default
+- **Interaction**: built-in `CanInteract` / `PerformInteraction` / `GetInteractionPrompt` methods to wire into any interaction system
+- **Weather**: soil moisture strategies accept `ECurrentWeatherType` and temperature/humidity for decay and watering calculations
