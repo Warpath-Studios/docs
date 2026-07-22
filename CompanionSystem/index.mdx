@@ -1,0 +1,47 @@
+---
+title: "Companion System"
+description: "A generic, multiplayer-ready companion command system. Attach a component to any pawn to give it Follow/Stay/Guard/Attack/ReturnHome commands, behavior modes, group commands, and a logical leash relationship."
+---
+
+The Ultimate Multiplayer Companion System (UMCS) is a **generic, server-authoritative companion command system**. Attach `UCompanionComponent` to any pawn to give it Follow/Stay/Guard/Attack/ReturnHome commands, independent behavior modes, group commands, and a logical (non-physics) leash relationship — without requiring the pawn to inherit from any specific base class, and without any hard dependency on Taming, Husbandry, or a specific AI system.
+
+## **Key Features**
+
+- **Commands** — Follow, Stay, Guard, Attack, ReturnHome, dispatched through `ExecuteCompanionCommand` and gated by `HasAuthority()`
+- **AI-agnostic** — `UCompanionComponent` never assumes a specific AI system; it exposes replicated state, Blueprint-callable queries, and delegates for every state change. An optional `UCompanionAIAdapterComponent` translates that state into `AAIController` movement calls and mirrors it into a Blackboard by plain string keys — no Blackboard *asset* required
+- **Group commands** — `UCompanionGroupSubsystem` tracks named groups and dispatches to each member independently, so one invalid companion never fails the whole batch
+- **Leash system** — `UCompanionLeashComponent` is purely logical (a source/target relationship and distance rule checked on a timer, never a physics rope); multi-animal chains fall out naturally since each link only tracks its own immediate source. Rendering is delegated entirely to `ICompanionLeashVisualInterface`
+- **Combat** — implement `ICompanionCombatInterface` on the companion pawn to allow `AttackTarget` commands; a pawn that doesn't implement it simply can't receive them
+- **Ownership-aware** — with `OwnershipSystem` present, permission checks delegate to it; without it, falls back to a minimal built-in single/shared-owner identity
+- **Save/load** — with UMI present, registers with the save registry under bucket `World_Companions`; without it, `RequestSaveData`/`ApplyLoadData` work standalone
+- **Detailed rejection reasons** — every failed command reports a specific `ECompanionCommandRejectionReason` (NotOwner, InvalidTarget, TargetFriendly, CompanionUnavailable, OutOfRange, CooldownActive, and more)
+
+## **Architecture**
+
+- `UCompanionComponent` — the core component; owns state, behavior mode, and command execution
+- `UCompanionRequesterComponent` — attach to the `PlayerController`; the only path a client uses to issue commands to a companion it doesn't net-own (see below)
+- `UCompanionAIAdapterComponent` — optional; bridges companion state to a standard `AAIController` + NavMesh setup
+- `UCompanionLeashComponent` — logical leash relationship between two actors
+- `UCompanionGroupSubsystem` — world subsystem for named-group command dispatch
+- `UCompanionProfile` — data asset for capability/movement/combat configuration
+- `UCompanionSaveHandler` — save/load bridge
+- Interfaces: `ICompanionCombatInterface`, `ICompanionHomeInterface`, `ICompanionLeashVisualInterface`
+
+## **Why commands route through `UCompanionRequesterComponent`**
+
+A companion pawn is usually not net-owned by the commanding player — it's AI-controlled, or owned by nobody in particular. A `Server` RPC declared directly on `UCompanionComponent` would be silently dropped when called by any client that isn't that actor's net owner, which is exactly the case this system exists for. Routing the request through a component the client *does* own (their `PlayerController`) lets the server always trust `GetOwner()` to resolve who is actually asking.
+
+## **Multiplayer**
+
+All command validation and state changes happen in `ExecuteCompanionCommand`, gated by `HasAuthority()` — safe to run headless on a dedicated server. The AI adapter's movement/Blackboard logic is server-only.
+
+## **Integration**
+
+UMCS has no hard dependency on Taming, Husbandry, UMI, or any specific AI/combat/interaction system:
+
+- **Taming**: not built into this plugin — a project-side bridge implements `ITamingHandoffReceiver` and calls `InitializeAsCompanion` once a creature finishes domestication
+- **Husbandry**: not built into this plugin — a project-side bridge implements `ICompanionHomeInterface` over `UPastureComponent` to make a pasture a valid companion home
+- **Ownership**: optional soft dependency (`UMCS_WITH_OWNERSHIP`) on OwnershipSystem's `Can()` permission check
+- **Interaction/UI**: no dependency at all — `UCompanionComponent` exposes plain queries (`IsCompanionAvailable`, `CanLocalPlayerCommand`, profile capability flags) for a project's own interaction system to build menu options from
+- **Combat**: issues intent and state only, via `ICompanionCombatInterface` — never implements a concrete combat system
+- **Save**: optional soft dependency (`UMCS_WITH_UMI`) on UMI's save registry only

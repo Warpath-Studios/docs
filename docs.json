@@ -46,6 +46,18 @@
         ]
       },
       {
+        "tab": "Companion System",
+        "pages": [
+          "CompanionSystem/index"
+        ]
+      },
+      {
+        "tab": "Dialogue System",
+        "pages": [
+          "DialogueSystem/index"
+        ]
+      },
+      {
         "tab": "Gathering System",
         "pages": [
           "FoliageSystem/index",
