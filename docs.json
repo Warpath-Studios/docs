@@ -64,11 +64,11 @@
         ]
       },
       {
-        "tab": "Foliage System",
+        "tab": "Gathering System",
         "pages": [
           "FoliageSystem/index",
           {
-            "group": "Foliage System",
+            "group": "Gathering System",
             "pages": [
               "FoliageSystem/how-it-works",
               "FoliageSystem/integration-with-umi",
