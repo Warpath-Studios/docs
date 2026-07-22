@@ -40,6 +40,12 @@
         ]
       },
       {
+        "tab": "Building System",
+        "pages": [
+          "BuildingSystem/index"
+        ]
+      },
+      {
         "tab": "Foliage System",
         "pages": [
           "FoliageSystem/index",
