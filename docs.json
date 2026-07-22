@@ -254,6 +254,12 @@
         ]
       },
       {
+        "tab": "Quest System",
+        "pages": [
+          "QuestSystem/index"
+        ]
+      },
+      {
         "tab": "Skill System",
         "pages": [
           "SkillSystem/index",
